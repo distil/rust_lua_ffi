@@ -1,0 +1,11 @@
+[package]
+name = "lua-c-ffi-marshalling"
+version = "0.1.0"
+authors = ["Johan Gardell <736172+gardell@users.noreply.github.com>"]
+
+[dependencies]
+clap = {version = "2.24.2", features = ["yaml"]}
+quote = "0.3"
+syn = "0.11"
+syntex_syntax = "0.59.1"
+parser = { path = "../parser" }
