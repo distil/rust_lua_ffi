@@ -1,111 +1,132 @@
+rust-projects := \
+	c-marshalling \
+	derive-c-marshalling \
+	derive-c-marshalling-library \
+	derive-lua-marshalling \
+	lua-c-ffi-marshalling \
+	lua-marshalling \
+	parser \
+	rust-example \
+	rust-unit
+
+.PHONY: all
 all: build test run
 
+.PHONY: build-debug-rust
 build-debug-rust:
-	make -C c-marshalling build-debug
-	make -C derive-c-marshalling build-debug
-	make -C derive-c-marshalling-library build-debug
-	make -C derive-lua-marshalling build-debug
-	make -C lua-c-ffi-marshalling build-debug
-	make -C lua-marshalling build-debug
-	make -C parser build-debug
-	make -C rust-example build-debug
-	make -C rust-unit build-debug
+	for project in $(rust-projects); do \
+		$(MAKE) -C $$project build-debug; \
+	done
 
+.PHONY: build-release-rust
 build-release-rust:
-	make -C c-marshalling build-release
-	make -C derive-c-marshalling build-release
-	make -C derive-c-marshalling-library build-release
-	make -C derive-lua-marshalling build-release
-	make -C lua-c-ffi-marshalling build-release
-	make -C lua-marshalling build-release
-	make -C rust-example build-release
-	make -C rust-unit build-release
+	for project in $(rust-projects); do \
+		$(MAKE) -C $$project build-release; \
+	done
 
+.PHONY: test-debug-rust
 test-debug-rust:
-	make -C c-marshalling test-debug
-	make -C derive-c-marshalling test-debug
-	make -C derive-c-marshalling-library test-debug
-	make -C derive-lua-marshalling test-debug
-	make -C lua-c-ffi-marshalling test-debug
-	make -C lua-marshalling test-debug
-	make -C parser test-debug
-	make -C rust-example test-debug
-	make -C rust-unit test-debug
+	for project in $(rust-projects); do \
+		$(MAKE) -C $$project test-debug; \
+	done
 
+.PHONY: test-release-rust
 test-release-rust:
-	make -C c-marshalling test-release
-	make -C derive-c-marshalling test-release
-	make -C derive-c-marshalling-library test-release
-	make -C derive-lua-marshalling test-release
-	make -C lua-c-ffi-marshalling test-release
-	make -C lua-marshalling test-release
-	make -C parser test-release
-	make -C rust-example test-release
-	make -C rust-unit test-release
+	for project in $(rust-projects); do \
+		$(MAKE) -C $$project test-release; \
+	done
 
+.PHONY: clean-rust
 clean-rust:
-	make -C c-marshalling clean
-	make -C derive-c-marshalling clean
-	make -C derive-c-marshalling-library clean
-	make -C derive-lua-marshalling clean
-	make -C lua-c-ffi-marshalling clean
-	make -C lua-marshalling clean
-	make -C parser clean
-	make -C rust-example clean
-	make -C rust-unit clean
+	for project in $(rust-projects); do \
+		$(MAKE) -C $$project clean; \
+	done
 
 lua/test/luaunit.lua:
 	curl https://raw.githubusercontent.com/bluebird75/luaunit/master/luaunit.lua > lua/test/luaunit.lua
 
+.PHONY: luaunit
 luaunit: lua/test/luaunit.lua
 
+.PHONY: build-debug-example-lua
 build-debug-example-lua: build-debug-rust
 	mkdir -p lua/output
-	LD_LIBRARY_PATH=rust-example/target/debug/ luajit lua/bootstrap.lua rust_example > lua/output/rust-example.lua
+	LD_LIBRARY_PATH=rust-example/target/debug/ \
+	luajit lua/bootstrap.lua rust_example > lua/output/rust-example.lua
+
+.PHONY: build-release-example-lua
 build-release-example-lua: build-release-rust
 	mkdir -p lua/output
-	LD_LIBRARY_PATH=rust-example/target/release/ luajit lua/bootstrap.lua rust_example > lua/output/rust-example.lua
+	LD_LIBRARY_PATH=rust-example/target/release/ \
+	luajit lua/bootstrap.lua rust_example > lua/output/rust-example.lua
 
+.PHONY: build-debug-unit-lua
 build-debug-unit-lua: build-debug-rust
 	mkdir -p lua/output
-	LD_LIBRARY_PATH=rust-unit/target/debug/ luajit lua/bootstrap.lua rust_unit > lua/output/rust-unit.lua
+	LD_LIBRARY_PATH=rust-unit/target/debug/ \
+	luajit lua/bootstrap.lua rust_unit > lua/output/rust-unit.lua
+
+.PHONY: build-release-unit-lua
 build-release-unit-lua: build-release-rust
 	mkdir -p lua/output
-	LD_LIBRARY_PATH=rust-unit/target/release/ luajit lua/bootstrap.lua rust_unit > lua/output/rust-unit.lua
+	LD_LIBRARY_PATH=rust-unit/target/release/ \
+	luajit lua/bootstrap.lua rust_unit > lua/output/rust-unit.lua
 
+.PHONY: build-debug-lua
 build-debug-lua: build-debug-example-lua build-debug-unit-lua
+
+.PHONY: build-release-lua
 build-release-lua: build-release-example-lua build-release-unit-lua
 
+.PHONY: test-debug-lua
 test-debug-lua: build-debug-rust build-debug-lua luaunit
 	LD_LIBRARY_PATH=rust-unit/target/debug/ \
 	LUA_PATH="lua/?.lua;lua/output/?.lua;lua/test/?.lua;;" \
 	luajit lua/test/run.lua
+
+.PHONY: test-release-lua
 test-release-lua: build-release-rust build-release-lua luaunit
 	LD_LIBRARY_PATH=rust-unit/target/release/ \
 	LUA_PATH="lua/?.lua;lua/output/?.lua;lua/test/?.lua;;" \
 	luajit lua/test/run.lua
 
+.PHONY: run-debug-lua
 run-debug-lua: build-debug-rust build-debug-lua
 	LD_LIBRARY_PATH=rust-example/target/debug/ \
 	LUA_PATH="lua/?.lua;lua/output/?.lua;;" \
 	luajit lua/example.lua
+
+.PHONY: run-release-lua
 run-release-lua: build-release-rust build-release-lua
 	LD_LIBRARY_PATH=rust-example/target/release/ \
 	LUA_PATH="lua/?.lua;lua/output/?.lua;;" \
 	luajit lua/example.lua
 
+.PHONY: clean-lua
 clean-lua:
-	-rm lua/output/*
-	-rm lua/test/luaunit.lua
+	rm -rf lua/output
+	rm -f lua/test/luaunit.lua
 
+.PHONY: build-debug
 build-debug: build-debug-rust build-debug-lua
+
+.PHONY: build-release
 build-release: build-release-rust build-release-lua
+
+.PHONY: build
 build: build-debug
 
+.PHONY: test-debug
 test-debug: test-debug-rust test-debug-lua
+
+.PHONY: test-release
 test-release: test-release-rust test-release-lua
+
+.PHONY: test
 test: test-debug
 
+.PHONY: clean
 clean: clean-rust clean-lua
 
+.PHONY: run
 run: run-debug-lua
