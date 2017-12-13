@@ -106,6 +106,8 @@ pub fn c_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
                 }
             }
         },
-        _ => panic!("Only non-tuple struct supported")
+        ::syn::Body::Struct(::syn::VariantData::Tuple(_)) => panic!("Tuple-struct type not supported"),
+        ::syn::Body::Struct(::syn::VariantData::Unit) => panic!("Unit type not supported"),
+        ::syn::Body::Enum(_) => panic!("Enum type not supported"),
     }
 }
