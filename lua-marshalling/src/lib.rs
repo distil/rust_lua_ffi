@@ -200,8 +200,8 @@ impl<T: Type + 'static> Type for Vec<T> {
         format!(
             r#"typedef struct {{
     const {c_typename} *ptr;
-    uint64_t len;
-    uint64_t capacity;
+    size_t len;
+    size_t capacity;
 }} {self_typename};"#,
             c_typename = <T as Type>::c_typename(),
             self_typename = Self::typename())
@@ -350,7 +350,7 @@ macro_rules! primitive_slice_lua_native {
                 fn typedeclaration() -> String {
                     format!(r#"typedef struct {{
     const {c_name} *ptr;
-    uint64_t len;
+    size_t len;
 }} {self_typename};"#,
                         c_name = $c_name,
                         self_typename = Self::typename())
@@ -407,6 +407,8 @@ primitive_lua_from_native!(
     [u64 as "uint64_t"]
     [f32 as "float"]
     [f64 as "double"]
+    [isize as "ssize_t"]
+    [usize as "size_t"]
 );
 
 primitive_slice_lua_native!(
@@ -420,6 +422,8 @@ primitive_slice_lua_native!(
     [u64 as "uint64_t"]
     [f32 as "float"]
     [f64 as "double"]
+    [isize as "ssize_t"]
+    [usize as "size_t"]
 );
 
 primitive_slice_lua_to_native!(
@@ -432,6 +436,8 @@ primitive_slice_lua_to_native!(
     [u64 as "uint64_t"]
     [f32 as "float"]
     [f64 as "double"]
+    [isize as "ssize_t"]
+    [usize as "size_t"]
 );
 
 impl<'a> IntoRawConversion for &'a [u8] {

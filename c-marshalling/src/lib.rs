@@ -84,15 +84,15 @@ pub unsafe fn box_from_ptr<R, T: FromRawConversion<Raw=R>>(raw: *mut T::Raw) -> 
 #[repr(C)]
 pub struct CVec<T> {
     pub ptr: *const T,
-    pub len: u64,
-    pub capacity: u64,
+    pub len: usize,
+    pub capacity: usize,
 }
 
 #[repr(C)]
 pub struct CMutVec<T> {
     pub ptr: *mut T,
-    pub len: u64,
-    pub capacity: u64,
+    pub len: usize,
+    pub capacity: usize,
 }
 
 impl<T: IntoRawConversion> IntoRawConversion for Vec<T> {
@@ -106,8 +106,8 @@ impl<T: IntoRawConversion> IntoRawConversion for Vec<T> {
             .collect::<Result<Vec<_>, Error>>()?;
         let mut_vec = CMutVec {
             ptr: vec.as_mut_ptr(),
-            len: vec.len() as u64,
-            capacity: vec.capacity() as u64,
+            len: vec.len(),
+            capacity: vec.capacity(),
         };
         ::std::mem::forget(vec);
         Ok(mut_vec)
@@ -275,7 +275,7 @@ impl<T: PtrAsReference> PtrAsReference for Option<T> {
 #[repr(C)]
 pub struct CSlice<T> {
     pub ptr: *const T,
-    pub len: u64,
+    pub len: usize,
 }
 
 macro_rules! primitive_marshalled_type {
@@ -349,4 +349,6 @@ primitive_marshalled_type!(
     u64
     f32
     f64
+    isize
+    usize
 );
