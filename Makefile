@@ -9,37 +9,39 @@ rust-projects := \
 	rust-example \
 	rust-unit
 
+FFI_MARSHALLING_PATH := ../lua-c-ffi-marshalling/target/debug/
+
 .PHONY: all
 all: build test run
 
 .PHONY: build-debug-rust
 build-debug-rust:
 	for project in $(rust-projects); do \
-		$(MAKE) -C $$project build-debug; \
+		PATH=${PATH}:${FFI_MARSHALLING_PATH} cargo build --package $$project; \
 	done
 
 .PHONY: build-release-rust
 build-release-rust:
 	for project in $(rust-projects); do \
-		$(MAKE) -C $$project build-release; \
+		PATH=${PATH}:${FFI_MARSHALLING_PATH} cargo build --release --package $$project; \
 	done
 
 .PHONY: test-debug-rust
 test-debug-rust:
 	for project in $(rust-projects); do \
-		$(MAKE) -C $$project test-debug; \
+		PATH=${PATH}:${FFI_MARSHALLING_PATH} cargo test --package $$project; \
 	done
 
 .PHONY: test-release-rust
 test-release-rust:
 	for project in $(rust-projects); do \
-		$(MAKE) -C $$project test-release; \
+		PATH=${PATH}:${FFI_MARSHALLING_PATH} cargo test --release --package $$project; \
 	done
 
 .PHONY: clean-rust
 clean-rust:
 	for project in $(rust-projects); do \
-		$(MAKE) -C $$project clean; \
+		cargo clean --package $$project; \
 	done
 
 lua/test/luaunit.lua:
