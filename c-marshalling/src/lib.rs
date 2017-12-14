@@ -3,16 +3,29 @@
 extern crate libc;
 #[macro_use]
 extern crate derive_c_marshalling;
+#[macro_use]
+extern crate quick_error;
 
 // procedural crates do not allow exporting code themselves, so re-export the crate and
 // implement the library here.
 pub use derive_c_marshalling::*;
 
-#[derive(Debug)]
-pub enum Error {
-    NulError(::std::ffi::NulError),
-    IntoStringError(::std::ffi::IntoStringError),
-    Utf8Error(::std::str::Utf8Error),
+quick_error! {
+    #[derive(Debug)]
+    pub enum Error {
+        NulError(err: ::std::ffi::NulError) {
+            display("{}", err)
+            from()
+        }
+        IntoStringError(err: ::std::ffi::IntoStringError) {
+            display("{}", err)
+            from()
+        }
+        Utf8Error(err: ::std::str::Utf8Error) {
+            display("{}", err)
+            from()
+        }
+    }
 }
 
 // Types with #[derive(CMarshalling)] implement this trait.
@@ -144,9 +157,7 @@ impl IntoRawConversion for String {
     type Ptr = Self::Raw;
 
     fn into_raw(self) -> Result<Self::Raw, Error> {
-        ::std::ffi::CString::new(self)
-            .map_err(Error::NulError)
-            .map(::std::ffi::CString::into_raw)
+        Ok(::std::ffi::CString::new(self)?.into_raw())
     }
 
     fn into_ptr(self) -> Result<Self::Ptr, Error> {
@@ -189,9 +200,7 @@ impl<'a> PtrAsReference for &'a str {
     type Ptr = Self::Raw;
 
     unsafe fn raw_as_ref(raw: &Self::Raw) -> Result<Self, Error> {
-        ::std::ffi::CStr::from_ptr(*raw)
-            .to_str()
-            .map_err(Error::Utf8Error)
+        Ok(::std::ffi::CStr::from_ptr(*raw).to_str()?)
     }
 
     unsafe fn ptr_as_ref(raw: Self::Ptr) -> Result<Self, Error> {
