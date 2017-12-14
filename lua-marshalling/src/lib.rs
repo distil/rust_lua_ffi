@@ -93,16 +93,15 @@ impl<T: Type + 'static> Type for Option<T> {
     fn typedeclaration() -> String {
         format!(
             r#"typedef struct {{
-    const {} *ptr;
-}} {};"#,
-            <T as Type>::c_typename(),
-            Self::typename())
+    const {c_typename} *ptr;
+}} {self_typename};"#,
+            c_typename = <T as Type>::c_typename(),
+            self_typename = Self::typename())
     }
     fn metatype() -> String {
         format!(
-            r#"local {} = ffi.metatype("{}", {{}})"#,
-            Self::typename(),
-            Self::typename())
+            r#"local {self_typename} = ffi.metatype("{self_typename}", {{}})"#,
+            self_typename = Self::typename())
     }
     fn dependencies() -> Dependencies {
         make_dependencies::<T>()
@@ -113,9 +112,9 @@ impl<T: FromRawConversion + 'static> FromRawConversion for Option<T> {
     fn function() -> String {
         format!(
             r#"function(value)
-    return value.ptr ~= nil and invoke(value.ptr[0], {}) or nil
+    return value.ptr ~= nil and invoke(value.ptr[0], {function}) or nil
 end"#,
-            T::function())
+            function = T::function())
     }
     fn c_mut_function_argument() -> String {
         format!("{}*", <Self as Type>::c_typename())
@@ -134,13 +133,13 @@ pub fn ptr_type_to_array<T: IntoRawConversion>() -> String {
         r#"function(value)
     local result = {{}}
     for i, value in pairs(value) do
-        local tmp = invoke(value, {})
+        local tmp = invoke(value, {function})
         result[i] = tmp[0]
     end
-    return ffi.new("const {}[?]", #result, result)
+    return ffi.new("const {typename}[?]", #result, result)
 end"#,
-        T::function(),
-        <T as Type>::typename())
+        function = T::function(),
+        typename = <T as Type>::typename())
 }
 
 pub fn immediate_type_to_array<T: IntoRawConversion>() -> String {
@@ -148,39 +147,39 @@ pub fn immediate_type_to_array<T: IntoRawConversion>() -> String {
         r#"function(value)
     local result = {{}}
     for i, value in pairs(value) do
-        local tmp = invoke(value, {})
+        local tmp = invoke(value, {function})
         result[i] = tmp
     end
-    return ffi.new("const {}[?]", #result, result)
+    return ffi.new("const {typename}[?]", #result, result)
 end"#,
-        T::function(),
-        <T as Type>::typename())
+        function = T::function(),
+        typename = <T as Type>::typename())
 }
 
 fn primitive_type_to_pointer<T: IntoRawConversion>() -> String {
     format!(r#"function(value)
-    return ffi.new("const {}[1]", {{ value }})
+    return ffi.new("const {c_typename}[1]", {{ value }})
 end"#,
-        <T as Type>::c_typename())
+        c_typename = <T as Type>::c_typename())
 }
 
 fn primitive_type_to_array<T: IntoRawConversion>() -> String {
     format!(
         r#"function(value)
-    return ffi.new("const {}[?]", #value, value)
+    return ffi.new("const {c_typename}[?]", #value, value)
 end"#,
-        T::c_typename())
+        c_typename = T::c_typename())
 }
 
 impl<T: IntoRawConversion + 'static> IntoRawConversion for Option<T> {
     fn function() -> String {
         format!(r#"
 function(value)
-    return {}(value ~= nil and invoke(value, {}) or nil)
+    return {self_typename}(value ~= nil and invoke(value, {to_pointer}) or nil)
 end
 "#,
-        < Self as Type >::typename(),
-        <T as IntoRawConversion>::to_pointer())
+        self_typename = < Self as Type >::typename(),
+        to_pointer = <T as IntoRawConversion>::to_pointer())
     }
     fn c_function_argument() -> String {
         format!("const {}*", <Self as Type>::c_typename())
@@ -200,18 +199,17 @@ impl<T: Type + 'static> Type for Vec<T> {
     fn typedeclaration() -> String {
         format!(
             r#"typedef struct {{
-    const {} *ptr;
+    const {c_typename} *ptr;
     uint64_t len;
     uint64_t capacity;
-}} {};"#,
-            <T as Type>::c_typename(),
-            Self::typename())
+}} {self_typename};"#,
+            c_typename = <T as Type>::c_typename(),
+            self_typename = Self::typename())
     }
     fn metatype() -> String {
         format!(
-            r#"local {} = ffi.metatype("{}", {{}})"#,
-            Self::typename(),
-            Self::typename())
+            r#"local {self_typename} = ffi.metatype("{self_typename}", {{}})"#,
+            self_typename = Self::typename())
     }
     fn dependencies() -> Dependencies {
         make_dependencies::<T>()
@@ -225,11 +223,11 @@ impl<T: FromRawConversion + 'static> FromRawConversion for Vec<T> {
     local ret = {{}}
     local len = tonumber(value.len)
     for i = 1,len do
-        ret[i] = invoke(value.ptr[i - 1], {})
+        ret[i] = invoke(value.ptr[i - 1], {function})
     end
     return ret
 end"#,
-            T::function())
+            function = T::function())
     }
     fn c_mut_function_argument() -> String {
         format!("{}*", <Self as Type>::c_typename())
@@ -243,11 +241,11 @@ impl<T: IntoRawConversion + 'static> IntoRawConversion for Vec<T> {
     fn function() -> String {
         format!(r#"
 function(value)
-    return {}(invoke(value, {}), #value, 0)
+    return {self_typename}(invoke(value, {to_array}), #value, 0)
 end
 "#,
-                < Self as Type >::typename(),
-                <T as IntoRawConversion>::to_array())
+                self_typename = < Self as Type >::typename(),
+                to_array = <T as IntoRawConversion>::to_array())
     }
     fn c_function_argument() -> String {
         format!("const {}*", <Self as Type>::c_typename())
@@ -351,16 +349,16 @@ macro_rules! primitive_slice_lua_native {
 
                 fn typedeclaration() -> String {
                     format!(r#"typedef struct {{
-    const {} *ptr;
+    const {c_name} *ptr;
     uint64_t len;
-}} {};"#,
-                        $c_name, Self::typename())
+}} {self_typename};"#,
+                        c_name = $c_name,
+                        self_typename = Self::typename())
                 }
                 fn metatype() -> String {
                     format!(
-                        r#"local {} = ffi.metatype("{}", {{}})"#,
-                        Self::typename(),
-                        Self::typename())
+                        r#"local {self_typename} = ffi.metatype("{self_typename}", {{}})"#,
+                        self_typename = Self::typename())
                 }
             }
         )*
@@ -379,10 +377,10 @@ macro_rules! primitive_slice_lua_to_native {
     for i, value in pairs(value) do
         result[i] = value
     end
-    return {}(ffi.new("{}[?]", #result, result), #result)
+    return {self_typename}(ffi.new("{c_function_argument}[?]", #result, result), #result)
 end"#,
-                        <Self as Type>::typename(),
-                        <$typ as IntoRawConversion>::c_function_argument())
+                        self_typename = <Self as Type>::typename(),
+                        c_function_argument = <$typ as IntoRawConversion>::c_function_argument())
                 }
                 fn c_function_argument() -> String {
                     format!("const {}*", <Self as Type>::c_typename())
@@ -441,18 +439,17 @@ impl<'a> IntoRawConversion for &'a [u8] {
         format!(
             r#"function(value)
     if type(value) == "string" then
-        return {}(value, #value)
+        return {self_typename}(value, #value)
     else
         local result = {{}}
         for i, value in pairs(value) do
             result[i] = value
         end
-        return {}(ffi.new("{}[?]", #result, result), #result)
+        return {self_typename}(ffi.new("{c_function_argument}[?]", #result, result), #result)
     end
 end"#,
-            <Self as Type>::typename(),
-            <Self as Type>::typename(),
-            <u8 as IntoRawConversion>::c_function_argument())
+            self_typename = <Self as Type>::typename(),
+            c_function_argument = <u8 as IntoRawConversion>::c_function_argument())
     }
     fn c_function_argument() -> String {
         format!("const {}*", <Self as Type>::c_typename())

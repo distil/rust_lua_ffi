@@ -15,9 +15,9 @@ fn lua_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
                     let ident = &field.ident.as_ref().unwrap().to_string();
                     let ty = &field.ty;
                     quote! {
-                        format!("    {} {};\n",
-                            <#ty as ::lua_marshalling::Type>::c_typename(),
-                            #ident)
+                        format!("    {typename} {ident};\n",
+                            typename=<#ty as ::lua_marshalling::Type>::c_typename(),
+                            ident=#ident)
                     }
                 });
             let mut lua_table_field_initializers: Vec<_> = fields
@@ -26,10 +26,9 @@ fn lua_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
                     let ident = &field.ident.as_ref().unwrap().to_string();
                     let ty = &field.ty;
                     quote! {
-                        format!("{} = invoke(value.{}, {})",
-                            #ident,
-                            #ident,
-                            <#ty as ::lua_marshalling::FromRawConversion>::function())
+                        format!("{ident} = invoke(value.{ident}, {ty})",
+                            ident = #ident,
+                            ty = <#ty as ::lua_marshalling::FromRawConversion>::function())
                     }
                 })
                 .collect();
@@ -57,9 +56,9 @@ fn lua_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
                         ];
                         format!(r#"
 typedef struct {{
-{}}} {};"#,
-                            fields.join(" "),
-                            Self::typename())
+{fields}}} {self_typename};"#,
+                            fields = fields.join(" "),
+                            self_typename = Self::typename())
                     }
                     fn metatype() -> String {
                         "".to_owned()

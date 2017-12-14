@@ -32,14 +32,14 @@ fn function_declarations(
                 }
             );
             quote! {
-                format!(r#"int32_t {}(
-    {});"#,
-                    #ident,
-                    [#(#argument_declaration),*].join(",\n    ")),
-                format!("int32_t __gc_{}(
-    {});",
-                    #ident,
-                    <#ret as ::lua_marshalling::FromRawConversion>::c_mut_function_argument())
+                format!(r#"int32_t {ident}(
+    {argument_declaration});"#,
+                    ident=#ident,
+                    argument_declaration=[#(#argument_declaration),*].join(",\n    ")),
+                format!("int32_t __gc_{ident}(
+    {argument_declaration});",
+                    ident=#ident,
+                    argument_declaration=<#ret as ::lua_marshalling::FromRawConversion>::c_mut_function_argument())
             }
         });
 
@@ -57,7 +57,10 @@ fn function_declarations(
                     let ident = arg.ident.to_string();
                     let typ = &arg.typ;
                     quote!{
-                        format!("invoke({}, {})", #ident, <#typ as ::lua_marshalling::IntoRawConversion>::function())
+                        format!(
+                            "invoke({ident}, {function})",
+                            ident=#ident,
+                            function=<#typ as ::lua_marshalling::IntoRawConversion>::function())
                     }
                 })
                 .collect();
@@ -66,36 +69,34 @@ fn function_declarations(
             let argument_declaration = argument_declaration.join(",\n    ");
 
             quote!{
-                format!(r#"function M.{}(
-    {})
-local __ret_ptr = ffi.new("{}[1]", {{}})
-local status = rust.{}(
-    {}
+                format!(r#"function M.{ident}(
+    {argument_declaration})
+local __ret_ptr = ffi.new("{c_mut_function_argument}[1]", {{}})
+local status = rust.{ident}(
+    {argument_passing}
 )
 if status ~= 0 then
-    error("{} failed with status "..status)
+    error("{ident} failed with status "..status)
 end
 local __ret = __ret_ptr[0]
-{}
-return invoke(__ret, {})
+{gc}
+return invoke(__ret, {function})
 end
 "#,
-                    #ident,
-                    #argument_declaration,
-                    <#ret as ::lua_marshalling::FromRawConversion>::c_mut_function_argument(),
-                    #ident,
-                    {
+                    ident = #ident,
+                    argument_declaration = #argument_declaration,
+                    c_mut_function_argument = <#ret as ::lua_marshalling::FromRawConversion>::c_mut_function_argument(),
+                    argument_passing = {
                         let mut argument_passing: Vec<String> = [#(#argument_passing),*].to_vec();
                         argument_passing.push("__ret_ptr".to_owned());
                         argument_passing
                     }.join(",\n    "),
-                    #ident,
-                    if <#ret as ::lua_marshalling::FromRawConversion>::gc() {
+                    gc = if <#ret as ::lua_marshalling::FromRawConversion>::gc() {
                         format!("ffi.gc(__ret, rust.__gc_{})", #ident)
                     } else {
                         "".to_owned()
                     },
-                    <#ret as ::lua_marshalling::FromRawConversion>::function()
+                    function = <#ret as ::lua_marshalling::FromRawConversion>::function()
                 )
             }
         });
@@ -153,7 +154,7 @@ ffi.cdef[[
                         format!(r#"
 ]]
 
-local rust = ffi.load("{}")
+local rust = ffi.load("{library_name}")
 
 function invoke(value, fn)
     return fn(value)
@@ -180,7 +181,7 @@ end
 
 local M = {{}}
 
-"#, #library_name),
+"#, library_name = #library_name),
                         sorted_types
                             .iter()
                             .map(|dependencies| (dependencies.metatype)())
