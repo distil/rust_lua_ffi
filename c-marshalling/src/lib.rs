@@ -53,9 +53,9 @@ pub trait FromRawConversion : Sized {
 
     /// This method takes ownership of the `raw` object.
     /// Use `PtrAsReference::raw_as_ref` to *not* take ownership of the object.
-    unsafe fn from_raw(raw: Self::Raw) -> Self;
+    unsafe fn from_raw(raw: Self::Raw) -> Result<Self, Error>;
 
-    unsafe fn from_ptr(raw: Self::Ptr) -> Self;
+    unsafe fn from_ptr(raw: Self::Ptr) -> Result<Self, Error>;
 }
 
 // Types with #[derive(CMarshalling)] implement this trait.
@@ -77,7 +77,7 @@ pub fn box_into_ptr<R, T: IntoRawConversion<Raw=R>>(value: T) -> Result<*mut T::
         .map(Box::into_raw)
 }
 
-pub unsafe fn box_from_ptr<R, T: FromRawConversion<Raw=R>>(raw: *mut T::Raw) -> T {
+pub unsafe fn box_from_ptr<R, T: FromRawConversion<Raw=R>>(raw: *mut T::Raw) -> Result<T, Error> {
     T::from_raw(*Box::from_raw(raw))
 }
 
@@ -122,7 +122,7 @@ impl<T: FromRawConversion> FromRawConversion for Vec<T> {
     type Raw = CMutVec<T::Raw>;
     type Ptr = *mut Self::Raw;
 
-    unsafe fn from_raw(raw: Self::Raw) -> Self {
+    unsafe fn from_raw(raw: Self::Raw) -> Result<Self, Error> {
         Vec::from_raw_parts(raw.ptr, raw.len as usize, raw.capacity as usize)
             .into_iter()
             .map(|value| T::from_raw(value))
@@ -130,7 +130,7 @@ impl<T: FromRawConversion> FromRawConversion for Vec<T> {
     }
 
 
-    unsafe fn from_ptr(raw: Self::Ptr) -> Self {
+    unsafe fn from_ptr(raw: Self::Ptr) -> Result<Self, Error> {
         box_from_ptr(raw)
     }
 }
@@ -169,13 +169,12 @@ impl FromRawConversion for String {
     type Raw = *mut ::libc::c_char;
     type Ptr = Self::Raw;
 
-    unsafe fn from_raw(raw: Self::Raw) -> Self {
-        ::std::ffi::CString::from_raw(raw)
-            .to_string_lossy()
-            .into_owned()
+    unsafe fn from_raw(raw: Self::Raw) -> Result<Self, Error> {
+        Ok(::std::ffi::CString::from_raw(raw)
+            .into_string()?)
     }
 
-    unsafe fn from_ptr(raw: Self::Ptr) -> Self {
+    unsafe fn from_ptr(raw: Self::Ptr) -> Result<Self, Error> {
         Self::from_raw(raw)
     }
 }
@@ -186,8 +185,8 @@ impl PtrAsReference for String {
 
     unsafe fn raw_as_ref(raw: &Self::Raw) -> Result<Self, Error> {
         Ok(::std::ffi::CStr::from_ptr(*raw)
-            .to_string_lossy()
-            .into_owned())
+            .to_str()?
+            .to_owned())
     }
 
     unsafe fn ptr_as_ref(raw: Self::Ptr) -> Result<Self, Error> {
@@ -242,15 +241,15 @@ impl<T: FromRawConversion> FromRawConversion for Option<T> {
     type Raw = CMutOption<T::Raw>;
     type Ptr = *mut Self::Raw;
 
-    unsafe fn from_raw(raw: Self::Raw) -> Self {
-        if !raw.ptr.is_null() {
-            Some(box_from_ptr(raw.ptr))
+    unsafe fn from_raw(raw: Self::Raw) -> Result<Self, Error> {
+        Ok(if !raw.ptr.is_null() {
+            Some(box_from_ptr(raw.ptr)?)
         } else {
             None
-        }
+        })
     }
 
-    unsafe fn from_ptr(raw: Self::Ptr) -> Self {
+    unsafe fn from_ptr(raw: Self::Ptr) -> Result<Self, Error> {
         box_from_ptr(raw)
     }
 }
@@ -298,12 +297,12 @@ macro_rules! primitive_marshalled_type {
                 type Raw = Self;
                 type Ptr = Self::Raw;
 
-                unsafe fn from_raw(raw: Self::Raw) -> Self {
-                    raw
+                unsafe fn from_raw(raw: Self::Raw) -> Result<Self, Error> {
+                    Ok(raw)
                 }
 
-                unsafe fn from_ptr(raw: Self::Ptr) -> Self {
-                    raw
+                unsafe fn from_ptr(raw: Self::Ptr) -> Result<Self, Error> {
+                    Ok(raw)
                 }
             }
 

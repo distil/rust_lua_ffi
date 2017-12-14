@@ -192,8 +192,8 @@ pub fn function_declarations(functions: &[Function], uses: &[::quote::Tokens]) -
                     #[no_mangle]
                     pub unsafe extern "C" fn #gc_ident(
                             output: <#ret as ::c_marshalling::IntoRawConversion>::Ptr) -> u32 {
-                        <#ret as ::c_marshalling::FromRawConversion >::from_ptr(output);
-                        0
+                        <#ret as ::c_marshalling::FromRawConversion >::from_ptr(output)
+                            .is_err() as u32
                     }
             }
         });

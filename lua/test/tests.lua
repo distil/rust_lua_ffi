@@ -215,4 +215,18 @@ function M.testPanic()
     luaunit.assertNotNil(msg)
 end
 
+function M.testU8s()
+    local string = "Hello World!"
+    luaunit.assertEquals(unit.u8_slice_to_string(string), string)
+    luaunit.assertEquals(unit.u8_vec_to_string(string), string)
+end
+
+function M.testInvalidUtf8()
+    local string = "\xc3\xb1"
+    local status, _ = pcall(unit.u8_slice_to_string(string))
+    luaunit.assertFalse(status)
+    local status, _ = pcall(unit.u8_vec_to_string(string))
+    luaunit.assertFalse(status)
+end
+
 return M

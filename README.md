@@ -43,8 +43,8 @@ For this to work, the Lua table also keeps a reference to the native object poin
 To keep the native pointer and the table consistent, the `table` is immutable.
 
 ### `panic` and `error`
-* Passing a Lua string to Rust as `&str` **may** **fail** with an `error` due to UTF-8 requirements.
-However, passing a Lua string to Rust as a `String` will use `to_string_lossy` as the string is copied.
+* Passing a Lua string to Rust as `&str` or `String` **may** **fail** with an `error` due to UTF-8 requirements.
+However, passing a Lua string to Rust as a `&[u8]` or `Vec<u8>` will not.
 * Returning a string from Rust **may** **fail** as well with an `error` due to strings containing the zero-byte.
 * A Rust `panic` will cause an `error` in Lua.
 

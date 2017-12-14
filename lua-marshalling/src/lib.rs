@@ -241,7 +241,11 @@ impl<T: IntoRawConversion + 'static> IntoRawConversion for Vec<T> {
     fn function() -> String {
         format!(r#"
 function(value)
-    return {self_typename}(invoke(value, {to_array}), #value, 0)
+    if type(value) == "string" then
+        return {self_typename}(value, #value)
+    else
+        return {self_typename}(invoke(value, {to_array}), #value, 0)
+    end
 end
 "#,
                 self_typename = < Self as Type >::typename(),

@@ -37,7 +37,7 @@ pub fn c_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
                 .iter()
                 .map(|field| {
                     let ident = &field.ident.as_ref().unwrap();
-                    quote! { #ident: ::c_marshalling::FromRawConversion::from_raw(raw.#ident) }
+                    quote! { #ident: ::c_marshalling::FromRawConversion::from_raw(raw.#ident)? }
                 });
             let raw_as_ref_field_initializers = fields
                 .iter()
@@ -79,13 +79,13 @@ pub fn c_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
                     type Raw = #mut_marshal_typename;
                     type Ptr = *mut Self::Raw;
 
-                    unsafe fn from_raw(raw: #mut_marshal_typename) -> Self {
-                        Self {
+                    unsafe fn from_raw(raw: #mut_marshal_typename) -> Result<Self, ::c_marshalling::Error> {
+                        Ok(Self {
                             #(#from_raw_field_initializers),*
-                        }
+                        })
                     }
 
-                    unsafe fn from_ptr(raw: Self::Ptr) -> Self {
+                    unsafe fn from_ptr(raw: Self::Ptr) -> Result<Self, ::c_marshalling::Error> {
                         ::c_marshalling::box_from_ptr(raw)
                     }
                 }

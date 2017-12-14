@@ -208,6 +208,14 @@ pub mod extern_ffi {
     pub fn i_like_to_panic() -> i32 {
         panic!("p-p-p-p-p-anic!");
     }
+
+    pub fn u8_slice_to_string(slice: &[u8]) -> String {
+        String::from_utf8(slice.to_owned()).unwrap()
+    }
+
+    pub fn u8_vec_to_string(vec: Vec<u8>) -> String {
+        String::from_utf8(vec).unwrap()
+    }
 }
 
 include!(concat!(env!("OUT_DIR"), "/ffi.rs"));
