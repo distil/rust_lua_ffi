@@ -9,7 +9,7 @@ rust-projects := \
 	rust-example \
 	rust-unit
 
-FFI_MARSHALLING_PATH := ../lua-c-ffi-marshalling/target/debug/
+FFI_MARSHALLING_PATH := ../target/debug/
 
 .PHONY: all
 all: build test run
