@@ -121,6 +121,7 @@ end
         });
 
     quote! {
+        #[doc(hidden)]
         pub mod lua_bootstrap {
             #(use #uses;)*
 

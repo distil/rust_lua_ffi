@@ -48,12 +48,14 @@ pub fn c_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
 
             quote! {
 
+                #[doc(hidden)]
                 #[allow(non_snake_case)]
                 #[repr(C)]
                 pub struct #marshal_typename {
                     #(#marshal_type_field_declarations),*
                 }
 
+                #[doc(hidden)]
                 #[allow(non_snake_case)]
                 #[repr(C)]
                 pub struct #mut_marshal_typename {

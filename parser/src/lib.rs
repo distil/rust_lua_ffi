@@ -199,6 +199,7 @@ pub fn function_declarations(functions: &[Function], uses: &[::quote::Tokens]) -
         });
 
     quote! {
+        #[doc(hidden)]
         pub mod extern_c_ffi {
             #(use #uses;)*
 
