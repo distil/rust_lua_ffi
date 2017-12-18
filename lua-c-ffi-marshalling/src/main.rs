@@ -21,14 +21,14 @@ fn function_declarations(
                 .map(|arg| {
                     let typ = &arg.typ;
                     quote! {
-                        <#typ as ::lua_marshalling::IntoRawConversion>::c_function_argument()
+                        <#typ as ::lua_marshalling::Type>::c_function_argument()
                     }
                 })
                 .collect();
             let ret = &function.ret;
             argument_declaration.push(
                 quote! {
-                    format!("{}*", <#ret as ::lua_marshalling::FromRawConversion>::c_mut_function_argument())
+                    format!("{}*", <#ret as ::lua_marshalling::Type>::c_mut_function_argument())
                 }
             );
             quote! {
@@ -39,7 +39,7 @@ fn function_declarations(
                 format!("int32_t __gc_{ident}(
     {argument_declaration});",
                     ident=#ident,
-                    argument_declaration=<#ret as ::lua_marshalling::FromRawConversion>::c_mut_function_argument())
+                    argument_declaration=<#ret as ::lua_marshalling::Type>::c_mut_function_argument())
             }
         });
 
@@ -71,21 +71,22 @@ fn function_declarations(
             quote!{
                 format!(r#"function M.{ident}(
     {argument_declaration})
-local __ret_ptr = ffi.new("{c_mut_function_argument}[1]", {{}})
-local status = rust.{ident}(
-    {argument_passing}
-)
-if status ~= 0 then
-    error("{ident} failed with status "..status)
-end
-local __ret = __ret_ptr[0]
-{gc}
-return invoke(__ret, {function})
+    local __typeof = __c_mut_function_argument_{typename}
+    local __ret_ptr = __typeof(1, {{}})
+    local status = rust.{ident}(
+        {argument_passing}
+    )
+    if status ~= 0 then
+        error("{ident} failed with status "..status)
+    end
+    local __ret = __ret_ptr[0]
+    {gc}
+    return invoke(__ret, {function})
 end
 "#,
                     ident = #ident,
                     argument_declaration = #argument_declaration,
-                    c_mut_function_argument = <#ret as ::lua_marshalling::FromRawConversion>::c_mut_function_argument(),
+                    typename = <#ret as ::lua_marshalling::Type>::typename(),
                     argument_passing = {
                         let mut argument_passing: Vec<String> = [#(#argument_passing),*].to_vec();
                         argument_passing.push("__ret_ptr".to_owned());

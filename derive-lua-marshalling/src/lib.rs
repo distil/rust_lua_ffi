@@ -60,13 +60,19 @@ typedef struct {{
                             fields = fields.join(" "),
                             self_typename = Self::typename())
                     }
-                    fn metatype() -> String {
-                        "".to_owned()
-                    }
                     fn dependencies() -> ::lua_marshalling::Dependencies {
                         let mut dependencies = ::lua_marshalling::Dependencies::new();
                         #(#lua_dependencies)*
                         dependencies
+                    }
+                    fn c_function_argument() -> String {
+                        format!("const {}*", Self::c_typename())
+                    }
+                    fn c_mut_function_argument() -> String {
+                        format!("{}*", Self::typename())
+                    }
+                    fn metatype() -> String {
+                        ::lua_marshalling::ptr_type_metatype::<Self>()
                     }
                 }
 
@@ -82,9 +88,6 @@ end"#,
                                 #(#lua_table_field_initializers),*
                             ].join(", "))
                     }
-                    fn c_mut_function_argument() -> String {
-                        format!("{}*", <Self as ::lua_marshalling::Type>::typename())
-                    }
                     fn gc() -> bool {
                         true
                     }
@@ -93,9 +96,6 @@ end"#,
                 impl ::lua_marshalling::IntoRawConversion for #ident {
                     fn function() -> String {
                         "function(value) return value.__c_ptr__ end".to_string()
-                    }
-                    fn c_function_argument() -> String {
-                        format!("const {}*", <Self as ::lua_marshalling::Type>::c_typename())
                     }
                     fn to_pointer() -> String {
                         ::lua_marshalling::ptr_type_to_pointer::<Self>()
