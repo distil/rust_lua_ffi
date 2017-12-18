@@ -61,29 +61,24 @@ cargo new example_setup
 * In `example_setup` create the file `src/build.rs` with the following content
 
 ```Rust
+extern crate generator;
+
 use std::env;
-use std::path::Path;
-use std::process::Command;
 
 fn main() {
-    let env_out_dir = env::var("OUT_DIR").unwrap();
-    let out_dir = Path::new(&env_out_dir);
-    let rust_output = out_dir.join("ffi.rs");
+    let rust_output = ::std::path::Path::new(&env::var("OUT_DIR").unwrap()).join("ffi.rs");
 
-    let output = Command::new("lua-c-ffi-marshalling")
-        .args(&["--input", env::current_dir().unwrap().as_path().join("src/lib.rs").to_str().unwrap()])
-        .args(&["--output", rust_output.to_str().unwrap()])
-        .args(&["--library-name", "example_setup"])
-        .output()
-        .expect("lua-c-ffi-marshalling failed");
-    print!("--- stdout\n{}\n", String::from_utf8_lossy(&output.stdout).as_ref());
-    print!("--- stderr\n{}\n", String::from_utf8_lossy(&output.stderr).as_ref());
-    assert!(output.status.success());
+    let output = generator::generate(
+        &env::current_dir().unwrap().as_path().join("src/lib.rs"), "example_setup");
+
+    use std::io::Write;
+    std::fs::File::create(rust_output.clone()).unwrap().write_all(output.as_bytes()).unwrap();
+
     assert!(rust_output.exists());
 }
 ```
 
-**Note** the `--library-name` parameter must be equal to the library name of the crate.
+**Note** the `library_name` parameter to `generator::generator` must be equal to the library name of the crate.
 
 Add the following to the `Cargo.toml` under `[package]`
 ```
@@ -99,8 +94,11 @@ lua-marshalling = { path = "..path-to/lua-marshalling" }
 
 Add the following section to the `Cargo.toml` as well
 ```
+[build-dependencies]
+generator = { path = "..path-to/generator" }
+
 [lib]
-crate-type = ["dylib"]
+crate-type = ["cdylib"]
 ```
 
 In `src/lib.rs` add the following
@@ -120,14 +118,10 @@ include!(concat!(env!("OUT_DIR"), "/ffi.rs"));
 ```
 
 ### Building
-To build the `example_setup` crate, cargo must be able to execute the code generator. In order to do so, set the `PATH` as following:
-```Bash
-PATH=${PATH}:..path-to/lua-c-ffi-marshalling/target/release/ cargo build
-```
-
 After the library has been built, the Lua interface code can be generated using the following command
 ```
-LD_LIBRARY_PATH=..path-to-example_setup/target/debug/ luajit ..path-to-rust_lua_ffi/lua/bootstrap.lua example_setup > api.lua
+LD_LIBRARY_PATH=..path-to-example_setup/target/debug/ \
+    luajit ..path-to-rust_lua_ffi/lua/bootstrap.lua example_setup > api.lua
 ```
 
 ### Usage
