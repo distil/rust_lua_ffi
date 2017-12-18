@@ -52,6 +52,9 @@ However, passing a Lua string to Rust as a `&[u8]` or `Vec<u8>` will not.
 * `Vec<Option<T>>` have been disabled.
 Lua arrays generally do not handle `null` values well.
 See [https://www.lua.org/pil/19.1.html](https://www.lua.org/pil/19.1.html) for more information.
+* `struct` typenames must be unique. Separate modules are not enough.
+* Adentifiers can not be Lua or C reserved keywords. For example, a variable cannot be called `short`.
+* The `__` prefix is reserved for hidden identifiers and should not be used as field names or function arguments.
 
 ## Setup
 ### Configuration
