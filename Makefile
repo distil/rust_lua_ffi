@@ -1,9 +1,8 @@
 rust-projects := \
 	c-marshalling \
-	derive-c-marshalling \
 	derive-c-marshalling-library \
 	derive-lua-marshalling \
-	lua-c-ffi-marshalling \
+	generator \
 	lua-marshalling \
 	parser \
 	rust-example \

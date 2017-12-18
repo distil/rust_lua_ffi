@@ -3,8 +3,8 @@ name = "rust-unit"
 version = "0.1.0"
 dependencies = [
  "c-marshalling 0.1.0",
+ "generator 0.1.0",
  "libc 0.2.34 (registry+https://github.com/rust-lang/crates.io-index)",
- "lua-c-ffi-marshalling 0.1.0",
  "lua-marshalling 0.1.0",
 ]
 
@@ -22,19 +22,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "c-marshalling"
 version = "0.1.0"
 dependencies = [
- "derive-c-marshalling 0.1.0",
  "libc 0.2.34 (registry+https://github.com/rust-lang/crates.io-index)",
  "quick-error 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "derive-c-marshalling"
-version = "0.1.0"
-dependencies = [
- "derive-c-marshalling-library 0.1.0",
- "libc 0.2.34 (registry+https://github.com/rust-lang/crates.io-index)",
- "quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 0.11.11 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -89,6 +78,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "generator"
+version = "0.1.0"
+dependencies = [
+ "parser 0.1.0",
+ "quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syn 0.11.11 (registry+https://github.com/rust-lang/crates.io-index)",
+ "syntex_syntax 0.59.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "itoa"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -111,16 +110,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "log"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-
-[[package]]
-name = "lua-c-ffi-marshalling"
-version = "0.1.0"
-dependencies = [
- "parser 0.1.0",
- "quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)",
- "syn 0.11.11 (registry+https://github.com/rust-lang/crates.io-index)",
- "syntex_syntax 0.59.1 (registry+https://github.com/rust-lang/crates.io-index)",
-]
 
 [[package]]
 name = "lua-marshalling"
@@ -168,8 +157,8 @@ name = "rust-example"
 version = "0.1.0"
 dependencies = [
  "c-marshalling 0.1.0",
+ "generator 0.1.0",
  "libc 0.2.34 (registry+https://github.com/rust-lang/crates.io-index)",
- "lua-c-ffi-marshalling 0.1.0",
  "lua-marshalling 0.1.0",
 ]
 

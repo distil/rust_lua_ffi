@@ -2,13 +2,7 @@
 
 extern crate libc;
 #[macro_use]
-extern crate derive_c_marshalling;
-#[macro_use]
 extern crate quick_error;
-
-// procedural crates do not allow exporting code themselves, so re-export the crate and
-// implement the library here.
-pub use derive_c_marshalling::*;
 
 quick_error! {
     #[derive(Debug)]

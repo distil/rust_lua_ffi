@@ -1,5 +1,5 @@
 [package]
-name = "lua-c-ffi-marshalling"
+name = "generator"
 version = "0.1.0"
 authors = ["Johan Gardell <736172+gardell@users.noreply.github.com>"]
 

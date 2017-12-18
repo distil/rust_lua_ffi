@@ -10,7 +10,7 @@ c-marshalling = { path = "../c-marshalling" }
 lua-marshalling = { path = "../lua-marshalling" }
 
 [build-dependencies]
-lua-c-ffi-marshalling = { path = "../lua-c-ffi-marshalling" }
+generator = { path = "../generator" }
 
 [lib]
 name = "rust_example"

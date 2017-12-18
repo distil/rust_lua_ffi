@@ -1,7 +1,5 @@
 #![recursion_limit="256"]
 
-//#[macro_use]
-//extern crate clap;
 extern crate syn;
 extern crate syntex_syntax as syntax;
 #[macro_use]

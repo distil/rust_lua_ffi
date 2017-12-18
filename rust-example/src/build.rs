@@ -1,11 +1,11 @@
-extern crate lua_c_ffi_marshalling;
+extern crate generator;
 
 use std::env;
 
 fn main() {
     let rust_output = ::std::path::Path::new(&env::var("OUT_DIR").unwrap()).join("ffi.rs");
 
-    let output = lua_c_ffi_marshalling::generate(
+    let output = generator::generate(
         &env::current_dir().unwrap().as_path().join("src/ffi.rs"), "rust_example");
 
     use std::io::Write;
