@@ -190,7 +190,13 @@ pub mod extern_ffi {
     }
 
     pub fn u8_vec_to_string(vec: Vec<u8>) -> String {
-        String::from_utf8(vec).unwrap()
+        String::from_utf8(vec)
+            .unwrap()
+    }
+
+    pub fn string_with_byte_zeros() -> String {
+        println!("string_with_byte_zeros");
+        "String\0containing\0null\0bytes".to_owned()
     }
 }
 

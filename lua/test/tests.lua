@@ -222,10 +222,15 @@ function M.testU8s()
 end
 
 function M.testInvalidUtf8()
-    local string = "\xc3\xb1"
-    local status, _ = pcall(unit.u8_slice_to_string(string))
+    local string = "\0\x9f"
+    local status, _ = pcall(unit.u8_slice_to_string, string)
     luaunit.assertFalse(status)
-    local status, _ = pcall(unit.u8_vec_to_string(string))
+    local status, string = pcall(unit.u8_vec_to_string, string)
+    luaunit.assertFalse(status)
+end
+
+function M.testStringWithByteZeros()
+    local status, _ = pcall(unit.string_with_byte_zeros)
     luaunit.assertFalse(status)
 end
 
