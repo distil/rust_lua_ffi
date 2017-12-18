@@ -1,7 +1,7 @@
 #![recursion_limit="256"]
 
-#[macro_use]
-extern crate clap;
+//#[macro_use]
+//extern crate clap;
 extern crate syn;
 extern crate syntex_syntax as syntax;
 #[macro_use]
@@ -209,24 +209,14 @@ return M
     }
 }
 
-fn main() {
-    let cli_data = load_yaml!("cli.yml");
-    let cli = ::clap::App::from_yaml(cli_data)
-        .version(crate_version!())
-        .get_matches();
-
-    let mut rust_output = std::fs::File::create(cli.value_of("output").unwrap()).unwrap();
-
+pub fn generate(input: &::std::path::Path, library_name: &str) -> String {
     let session = ::syntax::parse::ParseSess::new(::syntax::codemap::FilePathMapping::empty());
-    let krate = ::syntax::parse::parse_crate_from_file(
-        &::std::path::Path::new(&cli.value_of("input").unwrap()), &session).unwrap();
+    let krate = ::syntax::parse::parse_crate_from_file(input, &session).unwrap();
     let items = parser::extern_ffi_mod(&krate).unwrap();
     let uses = parser::uses(items);
     let functions = parser::functions(items);
 
-    use std::io::Write;
-    rust_output.write_all(parser::function_declarations(&functions, &uses).as_str().as_bytes())
-        .unwrap();
-    rust_output.write_all(function_declarations(
-        &functions, &uses, cli.value_of("library_name").unwrap()).as_str().as_bytes()).unwrap();
+    format!("{}\n{}\n",
+            parser::function_declarations(&functions, &uses).as_str(),
+            function_declarations(&functions, &uses, library_name).as_str())
 }
