@@ -49,6 +49,6 @@ end
 local random_short = example.random_short()
 print("random_short", random_short)
 
--- Bug in Lua FFI on Mac causing anything to print to stderr/stdout in native to cause a segfault
+-- Commented out due to bug in Lua FFI on Mac causing anything to print to stderr/stdout in native to cause a segfault
 --local status, msg = pcall(example.i_like_to_panic)
 --print("i_like_to_panic", status, msg)
