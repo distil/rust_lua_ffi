@@ -65,11 +65,7 @@ pub mod extern_ffi {
         [string1, string2].join(separator)
     }
     pub fn concatenate_u16_slices(slice1: &[u16], slice2: &[u16]) -> Vec<u16> {
-        [slice1, slice2]
-            .into_iter()
-            .flat_map(|slice| slice.into_iter())
-            .cloned()
-            .collect()
+        slice1.iter().chain(slice2).cloned().collect()
     }
     pub fn concatenate_a(a1: A, a2: A, separator: &str) -> A {
         A {
@@ -78,42 +74,22 @@ pub mod extern_ffi {
         }
     }
     pub fn concatenate_vec_i32(vec1: Vec<i32>, vec2: Vec<i32>) -> Vec<i32> {
-        [vec1, vec2]
-            .into_iter()
-            .flat_map(|vec| vec.into_iter())
-            .cloned()
-            .collect()
+        vec1.into_iter().chain(vec2).collect()
     }
     pub fn concatenate_vec_a(vec1: Vec<A>, vec2: Vec<A>) -> Vec<A> {
-        [vec1, vec2]
-            .into_iter()
-            .flat_map(|vec| vec.into_iter())
-            .cloned()
-            .collect()
+        vec1.into_iter().chain(vec2).collect()
     }
     pub fn concatenate_vec_string(vec1: Vec<String>, vec2: Vec<String>) -> Vec<String> {
-        [vec1, vec2]
-            .into_iter()
-            .flat_map(|vec| vec.into_iter())
-            .cloned()
-            .collect()
+        vec1.into_iter().chain(vec2).collect()
     }
     pub fn concatenate_vec_vec_i32(vec1: Vec<Vec<i32>>, vec2: Vec<Vec<i32>>) -> Vec<Vec<i32>> {
-        [vec1, vec2]
-            .into_iter()
-            .flat_map(|vec| vec.into_iter())
-            .cloned()
-            .collect()
+        vec1.into_iter().chain(vec2).collect()
     }
     pub fn concatenate_vec_vec_string(
         vec1: Vec<Vec<String>>,
         vec2: Vec<Vec<String>>
     ) -> Vec<Vec<String>> {
-        [vec1, vec2]
-            .into_iter()
-            .flat_map(|vec| vec.into_iter())
-            .cloned()
-            .collect()
+        vec1.into_iter().chain(vec2).collect()
     }
     pub fn option_i32_or(option1: Option<i32>, option2: Option<i32>) -> Option<i32> {
         option1.or(option2)
