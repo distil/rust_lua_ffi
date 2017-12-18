@@ -14,4 +14,4 @@ lua-c-ffi-marshalling = { path = "../lua-c-ffi-marshalling" }
 
 [lib]
 name = "rust_example"
-crate-type = ["dylib"]
+crate-type = ["cdylib"]

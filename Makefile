@@ -9,53 +9,42 @@ rust-projects := \
 	rust-example \
 	rust-unit
 
-FFI_MARSHALLING_PATH := ../lua-c-ffi-marshalling/target/debug/
-
 .PHONY: all
 all: build test run
 
 .PHONY: build-debug-rust
 build-debug-rust:
 	for project in $(rust-projects); do \
-		cd $$project && \
-		PATH=${PATH}:${FFI_MARSHALLING_PATH} cargo build &&\
-		cd - ;\
+		cargo build --package $$project; \
 	done
 
 .PHONY: build-release-rust
 build-release-rust:
 	for project in $(rust-projects); do \
-		cd $$project && \
-		PATH=${PATH}:${FFI_MARSHALLING_PATH} cargo build --release && \
-		cd -; \
+		cargo build --release --package $$project; \
 	done
 
 .PHONY: test-debug-rust
 test-debug-rust:
 	for project in $(rust-projects); do \
-		cd $$project && \
-		PATH=${PATH}:${FFI_MARSHALLING_PATH} cargo test && \
-		cd - ;\
+		cargo test --package $$project; \
 	done
 
 .PHONY: test-release-rust
 test-release-rust:
 	for project in $(rust-projects); do \
-		cd $$project && \
-		PATH=${PATH}:${FFI_MARSHALLING_PATH} cargo test --release && \
-		cd - ;\
+		cargo test --release --package $$project; \
 	done
 
 .PHONY: clean-rust
 clean-rust:
 	for project in $(rust-projects); do \
-		cd $$project && \
-		cargo clean && \
-		cd - ;\
+		cargo clean --package $$project; \
 	done
 
 lua/test/luaunit.lua:
-	curl https://raw.githubusercontent.com/bluebird75/luaunit/master/luaunit.lua > lua/test/luaunit.lua
+	curl https://raw.githubusercontent.com/bluebird75/luaunit/master/luaunit.lua \
+		> lua/test/luaunit.lua
 
 .PHONY: luaunit
 luaunit: lua/test/luaunit.lua
@@ -63,25 +52,25 @@ luaunit: lua/test/luaunit.lua
 .PHONY: build-debug-example-lua
 build-debug-example-lua: build-debug-rust
 	mkdir -p lua/output
-	LD_LIBRARY_PATH=rust-example/target/debug/ \
+	LD_LIBRARY_PATH=target/debug/ \
 	luajit lua/bootstrap.lua rust_example > lua/output/rust-example.lua
 
 .PHONY: build-release-example-lua
 build-release-example-lua: build-release-rust
 	mkdir -p lua/output
-	LD_LIBRARY_PATH=rust-example/target/release/ \
+	LD_LIBRARY_PATH=target/release/ \
 	luajit lua/bootstrap.lua rust_example > lua/output/rust-example.lua
 
 .PHONY: build-debug-unit-lua
 build-debug-unit-lua: build-debug-rust
 	mkdir -p lua/output
-	LD_LIBRARY_PATH=rust-unit/target/debug/ \
+	LD_LIBRARY_PATH=target/debug/ \
 	luajit lua/bootstrap.lua rust_unit > lua/output/rust-unit.lua
 
 .PHONY: build-release-unit-lua
 build-release-unit-lua: build-release-rust
 	mkdir -p lua/output
-	LD_LIBRARY_PATH=rust-unit/target/release/ \
+	LD_LIBRARY_PATH=target/release/ \
 	luajit lua/bootstrap.lua rust_unit > lua/output/rust-unit.lua
 
 .PHONY: build-debug-lua
@@ -92,25 +81,25 @@ build-release-lua: build-release-example-lua build-release-unit-lua
 
 .PHONY: test-debug-lua
 test-debug-lua: build-debug-rust build-debug-lua luaunit
-	LD_LIBRARY_PATH=rust-unit/target/debug/ \
+	LD_LIBRARY_PATH=target/debug/ \
 	LUA_PATH="lua/?.lua;lua/output/?.lua;lua/test/?.lua;;" \
 	luajit lua/test/run.lua
 
 .PHONY: test-release-lua
 test-release-lua: build-release-rust build-release-lua luaunit
-	LD_LIBRARY_PATH=rust-unit/target/release/ \
+	LD_LIBRARY_PATH=target/release/ \
 	LUA_PATH="lua/?.lua;lua/output/?.lua;lua/test/?.lua;;" \
 	luajit lua/test/run.lua
 
 .PHONY: run-debug-lua
 run-debug-lua: build-debug-rust build-debug-lua
-	LD_LIBRARY_PATH=rust-example/target/debug/ \
+	LD_LIBRARY_PATH=target/debug/ \
 	LUA_PATH="lua/?.lua;lua/output/?.lua;;" \
 	luajit lua/example.lua
 
 .PHONY: run-release-lua
 run-release-lua: build-release-rust build-release-lua
-	LD_LIBRARY_PATH=rust-example/target/release/ \
+	LD_LIBRARY_PATH=target/release/ \
 	LUA_PATH="lua/?.lua;lua/output/?.lua;;" \
 	luajit lua/example.lua
 

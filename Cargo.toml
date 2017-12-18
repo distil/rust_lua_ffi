@@ -1,0 +1,12 @@
+[workspace]
+members = [
+    "c-marshalling",
+    "derive-c-marshalling",
+    "derive-c-marshalling-library",
+    "derive-lua-marshalling",
+    "lua-c-ffi-marshalling",
+    "lua-marshalling",
+    "parser",
+    "rust-example",
+    "rust-unit",
+]
