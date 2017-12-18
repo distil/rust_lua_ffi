@@ -225,7 +225,6 @@ impl<T: IntoRawConversion> IntoRawConversion for Option<T> {
         })
     }
 
-
     fn into_ptr(self) -> Result<Self::Ptr, Error> {
         box_into_ptr(self)
     }

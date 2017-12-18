@@ -41,8 +41,8 @@ pub trait FromRawConversion : Type {
 
 pub trait IntoRawConversion : Type {
     fn function() -> String;
-    fn to_pointer() -> String;
-    fn to_array() -> String;
+    fn create_pointer() -> String;
+    fn create_array() -> String;
 }
 
 pub type Dependencies = ::std::collections::HashMap<::std::any::TypeId, TypeDescription>;
@@ -109,11 +109,11 @@ local __c_mut_function_argument_{self_typename} = ffi.typeof("{c_mut_function_ar
             c_mut_function_argument = T::c_mut_function_argument())
 }
 
-pub fn ptr_type_to_pointer<T: IntoRawConversion>() -> String {
+pub fn ptr_type_create_pointer<T: IntoRawConversion>() -> String {
     T::function()
 }
 
-pub fn ptr_type_to_array<T: IntoRawConversion>() -> String {
+pub fn ptr_type_create_array<T: IntoRawConversion>() -> String {
     format!(
         r#"function(value)
     local result = {{}}
@@ -127,7 +127,7 @@ end"#,
         typename = <T as Type>::typename())
 }
 
-pub fn immediate_type_to_array<T: IntoRawConversion>() -> String {
+pub fn immediate_type_create_array<T: IntoRawConversion>() -> String {
     format!(
         r#"function(value)
     local result = {{}}
@@ -141,14 +141,14 @@ end"#,
         typename = <T as Type>::typename())
 }
 
-fn primitive_type_to_pointer<T: IntoRawConversion>() -> String {
+fn primitive_type_create_pointer<T: IntoRawConversion>() -> String {
     format!(r#"function(value)
     return __const_c_typename_{typename}(1, {{ value }})
 end"#,
             typename = <T as Type>::typename())
 }
 
-fn primitive_type_to_array<T: IntoRawConversion>() -> String {
+fn primitive_type_create_array<T: IntoRawConversion>() -> String {
     format!(
         r#"function(value)
     return __const_c_typename_{typename}(#value, value)
@@ -199,16 +199,16 @@ impl<T: IntoRawConversion + 'static> IntoRawConversion for Option<T> {
     fn function() -> String {
         format!(r#"
 function(value)
-    return __typename_{self_typename}(value ~= nil and invoke(value, {to_pointer}) or nil)
+    return __typename_{self_typename}(value ~= nil and invoke(value, {create_pointer}) or nil)
 end
 "#,
         self_typename = < Self as Type >::typename(),
-        to_pointer = <T as IntoRawConversion>::to_pointer())
+        create_pointer = <T as IntoRawConversion>::create_pointer())
     }
-    fn to_pointer() -> String {
-        ptr_type_to_pointer::<Self>()
+    fn create_pointer() -> String {
+        ptr_type_create_pointer::<Self>()
     }
-    fn to_array() -> String {
+    fn create_array() -> String {
         panic!("Array of Option<T> are unreliable and have been disabled");
     }
 }
@@ -266,18 +266,18 @@ function(value)
     if type(value) == "string" then
         return __typename_{self_typename}(value, #value)
     else
-        return __typename_{self_typename}(invoke(value, {to_array}), #value, 0)
+        return __typename_{self_typename}(invoke(value, {create_array}), #value, 0)
     end
 end
 "#,
                 self_typename = < Self as Type >::typename(),
-                to_array = <T as IntoRawConversion>::to_array())
+                create_array = <T as IntoRawConversion>::create_array())
     }
-    fn to_pointer() -> String {
-        ptr_type_to_pointer::<Self>()
+    fn create_pointer() -> String {
+        ptr_type_create_pointer::<Self>()
     }
-    fn to_array() -> String {
-        immediate_type_to_array::<Self>()
+    fn create_array() -> String {
+        immediate_type_create_array::<Self>()
     }
 }
 
@@ -312,11 +312,11 @@ impl IntoRawConversion for String {
     fn function() -> String {
         "function(value) return value end".to_owned()
     }
-    fn to_pointer() -> String {
-        primitive_type_to_pointer::<Self>()
+    fn create_pointer() -> String {
+        primitive_type_create_pointer::<Self>()
     }
-    fn to_array() -> String {
-        primitive_type_to_array::<Self>()
+    fn create_array() -> String {
+        primitive_type_create_array::<Self>()
     }
 }
 
@@ -355,11 +355,11 @@ macro_rules! primitive_lua_from_native {
                 fn function() -> String {
                     "function(value) return value end".to_owned()
                 }
-                fn to_pointer() -> String {
-                    primitive_type_to_pointer::<Self>()
+                fn create_pointer() -> String {
+                    primitive_type_create_pointer::<Self>()
                 }
-                fn to_array() -> String {
-                    primitive_type_to_array::<Self>()
+                fn create_array() -> String {
+                    primitive_type_create_array::<Self>()
                 }
             }
         )*
@@ -414,11 +414,11 @@ end"#,
                         self_typename = Self::typename(),
                         typename = <$typ as Type>::typename())
                 }
-                fn to_pointer() -> String {
-                    ptr_type_to_pointer::<Self>()
+                fn create_pointer() -> String {
+                    ptr_type_create_pointer::<Self>()
                 }
-                fn to_array() -> String {
-                    ptr_type_to_array::<Self>()
+                fn create_array() -> String {
+                    ptr_type_create_array::<Self>()
                 }
             }
         )*
@@ -504,11 +504,11 @@ end"#,
             self_typename = <Self as Type>::typename(),
             typename = <u8 as Type>::typename())
     }
-    fn to_pointer() -> String {
-        ptr_type_to_pointer::<Self>()
+    fn create_pointer() -> String {
+        ptr_type_create_pointer::<Self>()
     }
-    fn to_array() -> String {
-        ptr_type_to_array::<Self>()
+    fn create_array() -> String {
+        ptr_type_create_array::<Self>()
     }
 }
 
@@ -535,10 +535,10 @@ impl<'a> IntoRawConversion for &'a str {
     fn function() -> String {
         "function(value) return value end".to_owned()
     }
-    fn to_pointer() -> String {
-        primitive_type_to_pointer::<Self>()
+    fn create_pointer() -> String {
+        primitive_type_create_pointer::<Self>()
     }
-    fn to_array() -> String {
-        primitive_type_to_array::<Self>()
+    fn create_array() -> String {
+        primitive_type_create_array::<Self>()
     }
 }

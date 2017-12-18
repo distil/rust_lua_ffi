@@ -97,11 +97,11 @@ end"#,
                     fn function() -> String {
                         "function(value) return value.__c_ptr__ end".to_string()
                     }
-                    fn to_pointer() -> String {
-                        ::lua_marshalling::ptr_type_to_pointer::<Self>()
+                    fn create_pointer() -> String {
+                        ::lua_marshalling::ptr_type_create_pointer::<Self>()
                     }
-                    fn to_array() -> String {
-                        ::lua_marshalling::ptr_type_to_array::<Self>()
+                    fn create_array() -> String {
+                        ::lua_marshalling::ptr_type_create_array::<Self>()
                     }
                 }
             }
