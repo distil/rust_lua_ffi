@@ -53,7 +53,7 @@ However, passing a Lua string to Rust as a `&[u8]` or `Vec<u8>` will not.
 Lua arrays generally do not handle `null` values well.
 See [https://www.lua.org/pil/19.1.html](https://www.lua.org/pil/19.1.html) for more information.
 * `struct` typenames must be unique. Separate modules are not enough.
-* Adentifiers can not be Lua or C reserved keywords. For example, a variable cannot be called `short`.
+* Identifiers can not be Lua or C reserved keywords. For example, a variable cannot be called `short`.
 * The `__` prefix is reserved for hidden identifiers and should not be used as field names or function arguments.
 
 ## Setup
@@ -91,14 +91,14 @@ build = "src/build.rs"
 Under `[dependencies]` add the following
 ```
 libc = "0.2.20"
-c-marshalling = { path = "..path-to/c-marshalling" }
-lua-marshalling = { path = "..path-to/lua-marshalling" }
+c-marshalling = { git = "https://github.com/distil/rust_lua_ffi" }
+lua-marshalling = { git = "https://github.com/distil/rust_lua_ffi" }
 ```
 
 Add the following section to the `Cargo.toml` as well
 ```
 [build-dependencies]
-generator = { path = "..path-to/generator" }
+generator = { git = "https://github.com/distil/rust_lua_ffi" }
 
 [lib]
 crate-type = ["cdylib"]
