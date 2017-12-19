@@ -49,7 +49,7 @@ pub trait FromRawConversion : Sized {
     /// Use `PtrAsReference::raw_as_ref` to *not* take ownership of the object.
     unsafe fn from_raw(raw: Self::Raw) -> Result<Self, Error>;
 
-    unsafe fn from_ptr(raw: Self::Ptr) -> Result<Self, Error>;
+    unsafe fn from_ptr(ptr: Self::Ptr) -> Result<Self, Error>;
 }
 
 // Types with #[derive(CMarshalling)] implement this trait.
@@ -62,7 +62,7 @@ pub trait PtrAsReference : Sized {
     /// Use `FromRawConversion::from_raw` to take ownership of the pointer.
     unsafe fn raw_as_ref(raw: &Self::Raw) -> Result<Self, Error>;
 
-    unsafe fn ptr_as_ref(raw: Self::Ptr) -> Result<Self, Error>;
+    unsafe fn ptr_as_ref(ptr: Self::Ptr) -> Result<Self, Error>;
 }
 
 pub fn box_into_ptr<R, T: IntoRawConversion<Raw=R>>(value: T) -> Result<*mut T::Raw, Error> {
@@ -124,8 +124,8 @@ impl<T: FromRawConversion> FromRawConversion for Vec<T> {
     }
 
 
-    unsafe fn from_ptr(raw: Self::Ptr) -> Result<Self, Error> {
-        box_from_ptr(raw)
+    unsafe fn from_ptr(ptr: Self::Ptr) -> Result<Self, Error> {
+        box_from_ptr(ptr)
     }
 }
 
@@ -141,8 +141,8 @@ impl<T: PtrAsReference> PtrAsReference for Vec<T> {
     }
 
 
-    unsafe fn ptr_as_ref(raw: Self::Ptr) -> Result<Self, Error> {
-        Self::raw_as_ref(&*raw)
+    unsafe fn ptr_as_ref(ptr: Self::Ptr) -> Result<Self, Error> {
+        Self::raw_as_ref(&*ptr)
     }
 }
 
@@ -168,8 +168,8 @@ impl FromRawConversion for String {
             .into_string()?)
     }
 
-    unsafe fn from_ptr(raw: Self::Ptr) -> Result<Self, Error> {
-        Self::from_raw(raw)
+    unsafe fn from_ptr(ptr: Self::Ptr) -> Result<Self, Error> {
+        Self::from_raw(ptr)
     }
 }
 
@@ -183,8 +183,8 @@ impl PtrAsReference for String {
             .to_owned())
     }
 
-    unsafe fn ptr_as_ref(raw: Self::Ptr) -> Result<Self, Error> {
-        Self::raw_as_ref(&raw)
+    unsafe fn ptr_as_ref(ptr: Self::Ptr) -> Result<Self, Error> {
+        Self::raw_as_ref(&ptr)
     }
 }
 
@@ -196,8 +196,8 @@ impl<'a> PtrAsReference for &'a str {
         Ok(::std::ffi::CStr::from_ptr(*raw).to_str()?)
     }
 
-    unsafe fn ptr_as_ref(raw: Self::Ptr) -> Result<Self, Error> {
-        Self::raw_as_ref(&raw)
+    unsafe fn ptr_as_ref(ptr: Self::Ptr) -> Result<Self, Error> {
+        Self::raw_as_ref(&ptr)
     }
 }
 
@@ -242,8 +242,8 @@ impl<T: FromRawConversion> FromRawConversion for Option<T> {
         })
     }
 
-    unsafe fn from_ptr(raw: Self::Ptr) -> Result<Self, Error> {
-        box_from_ptr(raw)
+    unsafe fn from_ptr(ptr: Self::Ptr) -> Result<Self, Error> {
+        box_from_ptr(ptr)
     }
 }
 
@@ -259,8 +259,8 @@ impl<T: PtrAsReference> PtrAsReference for Option<T> {
         }
     }
 
-    unsafe fn ptr_as_ref(raw: Self::Ptr) -> Result<Self, Error> {
-       Self::raw_as_ref(&*raw)
+    unsafe fn ptr_as_ref(ptr: Self::Ptr) -> Result<Self, Error> {
+       Self::raw_as_ref(&*ptr)
     }
 }
 
@@ -294,8 +294,8 @@ macro_rules! primitive_marshalled_type {
                     Ok(raw)
                 }
 
-                unsafe fn from_ptr(raw: Self::Ptr) -> Result<Self, Error> {
-                    Ok(raw)
+                unsafe fn from_ptr(ptr: Self::Ptr) -> Result<Self, Error> {
+                    Ok(ptr)
                 }
             }
 
@@ -307,8 +307,8 @@ macro_rules! primitive_marshalled_type {
                     Ok(raw.clone())
                 }
 
-                unsafe fn ptr_as_ref(raw: Self::Ptr) -> Result<Self, Error> {
-                    Ok(raw)
+                unsafe fn ptr_as_ref(ptr: Self::Ptr) -> Result<Self, Error> {
+                    Ok(ptr)
                 }
             }
 
@@ -320,11 +320,10 @@ macro_rules! primitive_marshalled_type {
                     Ok(::std::slice::from_raw_parts(raw.ptr, raw.len as usize))
                 }
 
-                unsafe fn ptr_as_ref(raw: Self::Ptr) -> Result<Self, Error> {
-                    Self::raw_as_ref(&*raw)
+                unsafe fn ptr_as_ref(ptr: Self::Ptr) -> Result<Self, Error> {
+                    Self::raw_as_ref(&*ptr)
                 }
             }
-
         )*
 
     };
@@ -344,3 +343,42 @@ primitive_marshalled_type!(
     isize
     usize
 );
+
+impl IntoRawConversion for bool {
+    type Raw = i8;
+    type Ptr = Self::Raw;
+
+    fn into_raw(self) -> Result<Self::Raw, Error> {
+        Ok(self as Self::Raw)
+    }
+
+    fn into_ptr(self) -> Result<Self::Ptr, Error> {
+        Ok(self as Self::Ptr)
+    }
+}
+
+impl FromRawConversion for bool {
+    type Raw = i8;
+    type Ptr = Self::Raw;
+
+    unsafe fn from_raw(raw: Self::Raw) -> Result<Self, Error> {
+        Ok(raw != 0)
+    }
+
+    unsafe fn from_ptr(ptr: Self::Ptr) -> Result<Self, Error> {
+        Ok(ptr != 0)
+    }
+}
+
+impl PtrAsReference for bool {
+    type Raw = i8;
+    type Ptr = Self::Raw;
+
+    unsafe fn raw_as_ref(raw: &Self::Raw) -> Result<Self, Error> {
+        Ok(*raw != 0)
+    }
+
+    unsafe fn ptr_as_ref(ptr: Self::Ptr) -> Result<Self, Error> {
+        Ok(ptr != 0)
+    }
+}

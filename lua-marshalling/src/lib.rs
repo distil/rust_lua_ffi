@@ -187,8 +187,12 @@ impl<T: FromRawConversion + 'static> FromRawConversion for Option<T> {
     fn function() -> String {
         format!(
             r#"function(value)
-    local f = {function}
-    return value.ptr ~= nil and f(value.ptr[0]) or nil
+    if value.ptr ~= nil then
+        local f = {function}
+        return f(value.ptr[0])
+    else
+        return nil
+    end
 end"#,
             function = T::function())
     }
@@ -202,7 +206,11 @@ impl<T: IntoRawConversion + 'static> IntoRawConversion for Option<T> {
         format!(r#"
 function(value)
     local f = {create_pointer}
-    return __typename_{self_typename}(value ~= nil and f(value) or nil)
+    if value ~= nil then
+        return __typename_{self_typename}(f(value))
+    else
+        return __typename_{self_typename}(nil)
+    end
 end
 "#,
         self_typename = < Self as Type >::typename(),
@@ -388,7 +396,7 @@ macro_rules! primitive_slice_lua_native {
                         self_typename = Self::typename())
                 }
                 fn c_function_argument() -> String {
-                    format!("const {}*", <Self as Type>::c_typename())
+                    format!("const {}*", Self::c_typename())
                 }
                 fn c_mut_function_argument() -> String {
                     // Mutable not supported
@@ -539,6 +547,45 @@ impl<'a> Type for &'a str {
 impl<'a> IntoRawConversion for &'a str {
     fn function() -> String {
         "function(value) return value end".to_owned()
+    }
+    fn create_pointer() -> String {
+        primitive_type_create_pointer::<Self>()
+    }
+    fn create_array() -> String {
+        primitive_type_create_array::<Self>()
+    }
+}
+
+impl Type for bool {
+    fn typename() -> String {
+        stringify!(bool).to_owned()
+    }
+    fn c_typename() -> String {
+        stringify!(int8_t).to_owned()
+    }
+    fn c_function_argument() -> String {
+        Self::c_typename()
+    }
+    fn c_mut_function_argument() -> String {
+        Self::c_typename()
+    }
+    fn metatype() -> String {
+        primitive_type_metatype::<Self>()
+    }
+}
+
+impl FromRawConversion for bool {
+    fn function() -> String {
+        "function(value) return value ~= 0 end".to_owned()
+    }
+    fn gc() -> bool {
+        false
+    }
+}
+
+impl IntoRawConversion for bool {
+    fn function() -> String {
+        "function(value) return value and 1 or 0 end".to_owned()
     }
     fn create_pointer() -> String {
         primitive_type_create_pointer::<Self>()

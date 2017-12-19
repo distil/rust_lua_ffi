@@ -234,4 +234,25 @@ function M.testStringWithByteZeros()
     luaunit.assertFalse(status)
 end
 
+function M.testBooleans()
+    local g1 = unit.make_g(true, nil, {})
+    local g2 = unit.make_g(false, true, { true })
+    local g3 = unit.make_g(true, false, { true, false })
+
+    luaunit.assertTrue(g1.b)
+    luaunit.assertNil(g1.option_b)
+    luaunit.assertEquals(#g1.vec_b, 0)
+
+    luaunit.assertFalse(g2.b)
+    luaunit.assertTrue(g2.option_b)
+    luaunit.assertEquals(#g2.vec_b, 1)
+    luaunit.assertTrue(g2.vec_b[1])
+
+    luaunit.assertTrue(g3.b)
+    luaunit.assertFalse(g3.option_b)
+    luaunit.assertEquals(#g3.vec_b, 2)
+    luaunit.assertTrue(g3.vec_b[1])
+    luaunit.assertFalse(g3.vec_b[2])
+end
+
 return M

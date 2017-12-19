@@ -33,6 +33,13 @@ pub struct F {
     strings: Option<Vec<String>>,
 }
 
+#[derive(Debug, Eq, PartialEq, LuaMarshalling)]
+pub struct G {
+    b: bool,
+    option_b: Option<bool>,
+    vec_b: Vec<bool>,
+}
+
 pub mod extern_ffi {
     // Intentionally not `use` all structs to test relative names
     use super::{A, D};
@@ -173,6 +180,15 @@ pub mod extern_ffi {
         super::F {
             as_,
             strings,
+        }
+    }
+
+    pub fn make_g(b: bool, option_b: Option<bool>, vec_b: Vec<bool>) -> super::G {
+        println!("option_b: {:?}", option_b);
+        super::G {
+            b,
+            option_b,
+            vec_b,
         }
     }
 
