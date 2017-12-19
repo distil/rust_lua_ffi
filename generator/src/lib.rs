@@ -157,7 +157,7 @@ ffi.cdef[[
 
 local rust = ffi.load("{library_name}")
 
-function readonlytable(table)
+local readonlytable = function (table)
     return setmetatable({{}}, {{
         __index = table,
         __newindex = function(_, key, value)
