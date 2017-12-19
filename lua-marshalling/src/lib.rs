@@ -117,8 +117,9 @@ pub fn ptr_type_create_array<T: IntoRawConversion>() -> String {
     format!(
         r#"function(value)
     local result = {{}}
+    local f = {function}
     for i, value in pairs(value) do
-        local tmp = invoke(value, {function})
+        local tmp = f(value)
         result[i] = tmp[0]
     end
     return __const_c_typename_{typename}(#result, result)
@@ -131,9 +132,9 @@ pub fn immediate_type_create_array<T: IntoRawConversion>() -> String {
     format!(
         r#"function(value)
     local result = {{}}
+    local f = {function}
     for i, value in pairs(value) do
-        local tmp = invoke(value, {function})
-        result[i] = tmp
+        result[i] = f(value)
     end
     return __const_c_typename_{typename}(#result, result)
 end"#,
@@ -186,7 +187,8 @@ impl<T: FromRawConversion + 'static> FromRawConversion for Option<T> {
     fn function() -> String {
         format!(
             r#"function(value)
-    return value.ptr ~= nil and invoke(value.ptr[0], {function}) or nil
+    local f = {function}
+    return value.ptr ~= nil and f(value.ptr[0]) or nil
 end"#,
             function = T::function())
     }
@@ -199,7 +201,8 @@ impl<T: IntoRawConversion + 'static> IntoRawConversion for Option<T> {
     fn function() -> String {
         format!(r#"
 function(value)
-    return __typename_{self_typename}(value ~= nil and invoke(value, {create_pointer}) or nil)
+    local f = {create_pointer}
+    return __typename_{self_typename}(value ~= nil and f(value) or nil)
 end
 "#,
         self_typename = < Self as Type >::typename(),
@@ -247,8 +250,9 @@ impl<T: FromRawConversion + 'static> FromRawConversion for Vec<T> {
             r#"function(value)
     local ret = {{}}
     local len = tonumber(value.len)
+    local f = {function}
     for i = 1,len do
-        ret[i] = invoke(value.ptr[i - 1], {function})
+        ret[i] = f(value.ptr[i - 1])
     end
     return ret
 end"#,
@@ -266,7 +270,8 @@ function(value)
     if type(value) == "string" then
         return __typename_{self_typename}(value, #value)
     else
-        return __typename_{self_typename}(invoke(value, {create_array}), #value, 0)
+        local f = {create_array}
+        return __typename_{self_typename}(f(value), #value, 0)
     end
 end
 "#,

@@ -26,9 +26,9 @@ fn lua_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
                     let ident = &field.ident.as_ref().unwrap().to_string();
                     let ty = &field.ty;
                     quote! {
-                        format!("{ident} = invoke(value.{ident}, {ty})",
+                        format!("{ident} = ({function})(value.{ident})",
                             ident = #ident,
-                            ty = <#ty as ::lua_marshalling::FromRawConversion>::function())
+                            function = <#ty as ::lua_marshalling::FromRawConversion>::function())
                     }
                 })
                 .collect();

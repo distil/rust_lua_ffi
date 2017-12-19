@@ -56,7 +56,7 @@ fn function_declarations(
                     let typ = &arg.typ;
                     quote!{
                         format!(
-                            "invoke({ident}, {function})",
+                            "({function})({ident})",
                             ident=#ident,
                             function=<#typ as ::lua_marshalling::IntoRawConversion>::function())
                     }
@@ -79,7 +79,8 @@ fn function_declarations(
     end
     local __ret = __ret_ptr[0]
     {gc}
-    return invoke(__ret, {function})
+    local f = {function}
+    return f(__ret)
 end
 "#,
                     ident = #ident,
@@ -155,10 +156,6 @@ ffi.cdef[[
 ]]
 
 local rust = ffi.load("{library_name}")
-
-function invoke(value, fn)
-    return fn(value)
-end
 
 function readonlytable(table)
     return setmetatable({{}}, {{
