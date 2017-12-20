@@ -41,6 +41,8 @@ print("describe", example.describe(a))
 For this to work, the Lua table also keeps a reference to the native object pointer.
 * The native object pointer is garbage collected by calling back to Rust.
 To keep the native pointer and the table consistent, the `table` is immutable.
+* `::c_marshalling::Blob<T>` enables passing opaque types as function arguments not interpreted by Lua.
+The returned blob is owned by Lua and will be garbage collected but can be passed as a reference back to Rust.
 
 ### `panic` and `error`
 * Passing a Lua string to Rust as `&str` or `String` **may** **fail** with an `error` due to UTF-8 requirements.
