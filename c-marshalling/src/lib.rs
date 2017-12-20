@@ -23,10 +23,9 @@ quick_error! {
 }
 
 // Types with #[derive(CMarshalling)] implement this trait.
-pub trait IntoRawConversion : Sized {
-
-    type Raw : Sized;
-    type Ptr : Sized;
+pub trait IntoRawConversion: Sized {
+    type Raw: Sized;
+    type Ptr: Sized;
 
     /// This method releases ownership `self`.
     /// A successfully returned type *must* be free'd using
@@ -40,10 +39,9 @@ pub trait IntoRawConversion : Sized {
 }
 
 // Types with #[derive(CMarshalling)] implement this trait.
-pub trait FromRawConversion : Sized {
-
-    type Raw : Sized;
-    type Ptr : Sized;
+pub trait FromRawConversion: Sized {
+    type Raw: Sized;
+    type Ptr: Sized;
 
     /// This method takes ownership of the `raw` object.
     /// Use `PtrAsReference::raw_as_ref` to *not* take ownership of the object.
@@ -53,10 +51,9 @@ pub trait FromRawConversion : Sized {
 }
 
 // Types with #[derive(CMarshalling)] implement this trait.
-pub trait PtrAsReference : Sized {
-
-    type Raw : Sized;
-    type Ptr : Sized;
+pub trait PtrAsReference: Sized {
+    type Raw: Sized;
+    type Ptr: Sized;
 
     /// This method does not take ownership of the object pointed to by `raw`.
     /// Use `FromRawConversion::from_raw` to take ownership of the pointer.
@@ -65,13 +62,11 @@ pub trait PtrAsReference : Sized {
     unsafe fn ptr_as_ref(ptr: Self::Ptr) -> Result<Self, Error>;
 }
 
-pub fn box_into_ptr<R, T: IntoRawConversion<Raw=R>>(value: T) -> Result<*mut T::Raw, Error> {
-    value.into_raw()
-        .map(Box::new)
-        .map(Box::into_raw)
+pub fn box_into_ptr<R, T: IntoRawConversion<Raw = R>>(value: T) -> Result<*mut T::Raw, Error> {
+    value.into_raw().map(Box::new).map(Box::into_raw)
 }
 
-pub unsafe fn box_from_ptr<R, T: FromRawConversion<Raw=R>>(raw: *mut T::Raw) -> Result<T, Error> {
+pub unsafe fn box_from_ptr<R, T: FromRawConversion<Raw = R>>(raw: *mut T::Raw) -> Result<T, Error> {
     T::from_raw(*Box::from_raw(raw))
 }
 
@@ -94,8 +89,7 @@ impl<T: IntoRawConversion> IntoRawConversion for Vec<T> {
     type Ptr = *mut Self::Raw;
 
     fn into_raw(self) -> Result<Self::Raw, Error> {
-        let mut vec = self
-            .into_iter()
+        let mut vec = self.into_iter()
             .map(T::into_raw)
             .collect::<Result<Vec<_>, Error>>()?;
         let mut_vec = CMutVec {
@@ -164,8 +158,7 @@ impl FromRawConversion for String {
     type Ptr = Self::Raw;
 
     unsafe fn from_raw(raw: Self::Raw) -> Result<Self, Error> {
-        Ok(::std::ffi::CString::from_raw(raw)
-            .into_string()?)
+        Ok(::std::ffi::CString::from_raw(raw).into_string()?)
     }
 
     unsafe fn from_ptr(ptr: Self::Ptr) -> Result<Self, Error> {
@@ -178,9 +171,7 @@ impl PtrAsReference for String {
     type Ptr = Self::Raw;
 
     unsafe fn raw_as_ref(raw: &Self::Raw) -> Result<Self, Error> {
-        Ok(::std::ffi::CStr::from_ptr(*raw)
-            .to_str()?
-            .to_owned())
+        Ok(::std::ffi::CStr::from_ptr(*raw).to_str()?.to_owned())
     }
 
     unsafe fn ptr_as_ref(ptr: Self::Ptr) -> Result<Self, Error> {
@@ -260,7 +251,7 @@ impl<T: PtrAsReference> PtrAsReference for Option<T> {
     }
 
     unsafe fn ptr_as_ref(ptr: Self::Ptr) -> Result<Self, Error> {
-       Self::raw_as_ref(&*ptr)
+        Self::raw_as_ref(&*ptr)
     }
 }
 
@@ -389,9 +380,7 @@ pub struct Blob<T: Sized> {
 
 impl<T: Sized> From<T> for Blob<T> {
     fn from(value: T) -> Self {
-        Blob {
-            value,
-        }
+        Blob { value }
     }
 }
 

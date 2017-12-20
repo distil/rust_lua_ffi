@@ -39,16 +39,13 @@ pub mod extern_ffi {
 
     pub fn make_b(string: Option<&str>, integer: Option<i32>) -> super::B {
         super::B {
-            string: string.map(|string|string.to_owned()),
+            string: string.map(|string| string.to_owned()),
             integer,
         }
     }
 
     pub fn make_c(a: Option<A>, b: Vec<super::B>) -> super::C {
-        super::C {
-            a,
-            b,
-        }
+        super::C { a, b }
     }
 
     pub fn make_d(integers: &[i32]) -> D {
@@ -58,10 +55,7 @@ pub mod extern_ffi {
     }
 
     pub fn make_e(integers: Option<Vec<i32>>, ds: Vec<D>) -> super::E {
-        super::E {
-            integers,
-            ds,
-        }
+        super::E { integers, ds }
     }
 
     pub fn describe(a: A, b: super::B, c: super::C, d: D, e: super::E) -> String {

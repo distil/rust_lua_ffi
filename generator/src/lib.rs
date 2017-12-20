@@ -1,45 +1,44 @@
-#![recursion_limit="256"]
+#![recursion_limit = "256"]
 
-extern crate syn;
-extern crate syntex_syntax as syntax;
+extern crate parser;
 #[macro_use]
 extern crate quote;
-extern crate parser;
+extern crate syn;
+extern crate syntex_syntax as syntax;
 
 fn function_declarations(
     functions: &[parser::Function],
     uses: &[::quote::Tokens],
-    library_name: &str) -> ::quote::Tokens {
-    let extern_lua_ffi_c_header_functions = functions
-        .iter()
-        .map(|function|{
-            let ident = function.ident.to_string();
-            let mut argument_declaration: Vec<_> = function.args
-                .iter()
-                .map(|arg| {
-                    let typ = &arg.typ;
-                    quote! {
-                        <#typ as ::lua_marshalling::Type>::c_function_argument()
-                    }
-                })
-                .collect();
-            let ret = &function.ret;
-            argument_declaration.push(
+    library_name: &str,
+) -> ::quote::Tokens {
+    let extern_lua_ffi_c_header_functions = functions.iter().map(|function| {
+        let ident = function.ident.to_string();
+        let mut argument_declaration: Vec<_> = function
+            .args
+            .iter()
+            .map(|arg| {
+                let typ = &arg.typ;
                 quote! {
-                    format!("{}*", <#ret as ::lua_marshalling::Type>::c_mut_function_argument())
+                    <#typ as ::lua_marshalling::Type>::c_function_argument()
                 }
-            );
-            quote! {
-                format!(r#"int32_t {ident}(
-    {argument_declaration});"#,
-                    ident=#ident,
-                    argument_declaration=[#(#argument_declaration),*].join(",\n    ")),
-                format!("int32_t __gc_{ident}(
-    {argument_declaration});",
-                    ident=#ident,
-                    argument_declaration=<#ret as ::lua_marshalling::Type>::c_mut_function_argument())
-            }
+            })
+            .collect();
+        let ret = &function.ret;
+        argument_declaration.push(quote! {
+            format!("{}*", <#ret as ::lua_marshalling::Type>::c_mut_function_argument())
         });
+        quote! {
+                    format!(r#"int32_t {ident}(
+        {argument_declaration});"#,
+                        ident=#ident,
+                        argument_declaration=[#(#argument_declaration),*].join(",\n    ")),
+                    format!("int32_t __gc_{ident}(
+        {argument_declaration});",
+                        ident=#ident,
+                        argument_declaration=<#ret as ::lua_marshalling::Type>
+                            ::c_mut_function_argument())
+                }
+    });
 
     let extern_lua_function_wrappers = functions
         .iter()
@@ -101,107 +100,105 @@ end
             }
         });
 
-    let extern_lua_unique_types = functions
-        .iter()
-        .map(|function|{
-            let args = function.args
-                .iter()
-                .map(|arg| {
-                    let typ = &arg.typ;
-                    quote! {
-                        ::lua_marshalling::make_dependencies::<#typ>()
-                    }
-                });
-
-            let ret = &function.ret;
+    let extern_lua_unique_types = functions.iter().map(|function| {
+        let args = function.args.iter().map(|arg| {
+            let typ = &arg.typ;
             quote! {
-                #(#args,)*
-                ::lua_marshalling::make_dependencies::<#ret>(),
+                ::lua_marshalling::make_dependencies::<#typ>()
             }
         });
 
+        let ret = &function.ret;
+        quote! {
+            #(#args,)*
+            ::lua_marshalling::make_dependencies::<#ret>(),
+        }
+    });
+
     quote! {
-        #[doc(hidden)]
-        pub mod lua_bootstrap {
-            #(use #uses;)*
+            #[doc(hidden)]
+            pub mod lua_bootstrap {
+                #(use #uses;)*
 
-            #[no_mangle]
-            pub extern "C" fn __lua_bootstrap() -> *mut ::libc::c_char {
-                let unique_types: ::lua_marshalling::Dependencies = [ #(#extern_lua_unique_types)* ]
-                    .into_iter()
-                    .flat_map(|value| value.into_iter()
-                        .map(|(k, v)| (k.clone(), v.clone())))
-                    .collect();
-                let sorted_types =
-                    ::lua_marshalling::dependency_sorted_type_descriptions(&unique_types);
+                #[no_mangle]
+                pub extern "C" fn __lua_bootstrap() -> *mut ::libc::c_char {
+                    let unique_types: ::lua_marshalling::Dependencies =
+                        [ #(#extern_lua_unique_types)* ]
+                            .into_iter()
+                            .flat_map(|value| value.into_iter()
+                                .map(|(k, v)| (k.clone(), v.clone())))
+                            .collect();
+                    let sorted_types =
+                        ::lua_marshalling::dependency_sorted_type_descriptions(&unique_types);
 
-                ::std::ffi::CString::new(
-                    [
-                        r#"-- Code generated by Rust Lua interface. DO NOT EDIT.
+                    ::std::ffi::CString::new(
+                        [
+                            r#"-- Code generated by Rust Lua interface. DO NOT EDIT.
 
-local ffi = require("ffi")
+    local ffi = require("ffi")
 
-ffi.cdef[[
-"#.to_owned(),
-                        sorted_types
-                            .iter()
-                            .map(|dependencies| (dependencies.typedeclaration)())
-                            .collect::<Vec<_>>()
-                            .join("\n"),
-                        {
-                            let functions: Vec<String> = vec![#(#extern_lua_ffi_c_header_functions),*];
-                            functions
-                        }.join("\n"),
-                        format!(r#"
-]]
+    ffi.cdef[[
+    "#.to_owned(),
+                            sorted_types
+                                .iter()
+                                .map(|dependencies| (dependencies.typedeclaration)())
+                                .collect::<Vec<_>>()
+                                .join("\n"),
+                            {
+                                let functions: Vec<String> =
+                                    vec![#(#extern_lua_ffi_c_header_functions),*];
+                                functions
+                            }.join("\n"),
+                            format!(r#"
+    ]]
 
-local rust = ffi.load("{library_name}")
+    local rust = ffi.load("{library_name}")
 
-local readonlytable = function (table)
-    return setmetatable({{}}, {{
-        __index = table,
-        __newindex = function(_, key, value)
-            error("Attempt to modify read-only table")
-        end,
-        __len = function(_)
-            return #table
-        end,
-        __ipairs = function(_)
-            return ipairs(table)
-        end,
-        __pairs = function(_)
-            return pairs(table)
-        end,
-        __metatable = false
-    }});
-end
+    local readonlytable = function (table)
+        return setmetatable({{}}, {{
+            __index = table,
+            __newindex = function(_, key, value)
+                error("Attempt to modify read-only table")
+            end,
+            __len = function(_)
+                return #table
+            end,
+            __ipairs = function(_)
+                return ipairs(table)
+            end,
+            __pairs = function(_)
+                return pairs(table)
+            end,
+            __metatable = false
+        }});
+    end
 
-local M = {{}}
+    local M = {{}}
 
-"#, library_name = #library_name),
-                        sorted_types
-                            .iter()
-                            .map(|dependencies| (dependencies.metatype)())
-                            .collect::<Vec<String>>()
-                            .join("\n"),
-                        #(#extern_lua_function_wrappers,)*
-                        r#"
-return M
-"#.to_owned()
-                    ].join("\n"))
-                        .ok()
-                        .map(::std::ffi::CString::into_raw)
-                        .unwrap_or_else(::std::ptr::null_mut)
-            }
+    "#, library_name = #library_name),
+                            sorted_types
+                                .iter()
+                                .map(|dependencies| (dependencies.metatype)())
+                                .collect::<Vec<String>>()
+                                .join("\n"),
+                            #(#extern_lua_function_wrappers,)*
+                            r#"
+    return M
+    "#.to_owned()
+                        ].join("\n"))
+                            .ok()
+                            .map(::std::ffi::CString::into_raw)
+                            .unwrap_or_else(::std::ptr::null_mut)
+                }
 
-            #[no_mangle]
-            pub unsafe extern "C" fn __free_lua_bootstrap(bootstrap: *mut ::libc::c_char) {
-                if bootstrap != ::std::ptr::null_mut() {
-                    ::std::ffi::CString::from_raw(bootstrap);
+                #[no_mangle]
+                pub unsafe extern "C" fn __free_lua_bootstrap(bootstrap: *mut ::libc::c_char) {
+                    if bootstrap != ::std::ptr::null_mut() {
+                        ::std::ffi::CString::from_raw(bootstrap);
+                    }
                 }
             }
         }
-    }
 }
 
 pub fn generate(input: &::std::path::Path, library_name: &str) -> String {
@@ -211,10 +208,12 @@ pub fn generate(input: &::std::path::Path, library_name: &str) -> String {
     let uses = parser::uses(items);
     let functions = parser::functions(items);
 
-    format!(r#"// Code generated by Rust Lua interface. DO NOT EDIT.
+    format!(
+        r#"// Code generated by Rust Lua interface. DO NOT EDIT.
 {}
 {}
 "#,
-            parser::function_declarations(&functions, &uses).as_str(),
-            function_declarations(&functions, &uses, library_name).as_str())
+        parser::function_declarations(&functions, &uses).as_str(),
+        function_declarations(&functions, &uses, library_name).as_str()
+    )
 }

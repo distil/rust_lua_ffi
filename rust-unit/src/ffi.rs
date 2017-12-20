@@ -94,7 +94,7 @@ pub mod extern_ffi {
     }
     pub fn concatenate_vec_vec_string(
         vec1: Vec<Vec<String>>,
-        vec2: Vec<Vec<String>>
+        vec2: Vec<Vec<String>>,
     ) -> Vec<Vec<String>> {
         vec1.into_iter().chain(vec2).collect()
     }
@@ -104,45 +104,39 @@ pub mod extern_ffi {
     pub fn option_a_or(option1: Option<A>, option2: Option<A>) -> Option<A> {
         option1.or(option2)
     }
-    pub fn option_string_or(
-        option1: Option<String>,
-        option2: Option<String>
-    ) -> Option<String> {
+    pub fn option_string_or(option1: Option<String>, option2: Option<String>) -> Option<String> {
         option1.or(option2)
     }
     pub fn option_vec_i32_or(
         option1: Option<Vec<i32>>,
-        option2: Option<Vec<i32>>
+        option2: Option<Vec<i32>>,
     ) -> Option<Vec<i32>> {
         option1.or(option2)
     }
     pub fn option_vec_string_or(
         option1: Option<Vec<String>>,
-        option2: Option<Vec<String>>
+        option2: Option<Vec<String>>,
     ) -> Option<Vec<String>> {
         option1.or(option2)
     }
-    pub fn option_vec_a_or(
-        option1: Option<Vec<A>>,
-        option2: Option<Vec<A>>
-    ) -> Option<Vec<A>> {
+    pub fn option_vec_a_or(option1: Option<Vec<A>>, option2: Option<Vec<A>>) -> Option<Vec<A>> {
         option1.or(option2)
     }
     pub fn option_option_i32_or(
         option1: Option<Option<i32>>,
-        option2: Option<Option<i32>>
+        option2: Option<Option<i32>>,
     ) -> Option<Option<i32>> {
         option1.or(option2)
     }
     pub fn option_option_string_or(
         option1: Option<Option<String>>,
-        option2: Option<Option<String>>
+        option2: Option<Option<String>>,
     ) -> Option<Option<String>> {
         option1.or(option2)
     }
     pub fn option_option_a_or(
         option1: Option<Option<A>>,
-        option2: Option<Option<A>>
+        option2: Option<Option<A>>,
     ) -> Option<Option<A>> {
         option1.or(option2)
     }
@@ -155,15 +149,12 @@ pub mod extern_ffi {
     }
     pub fn make_b(string: Option<&str>, integer: Option<i32>) -> super::B {
         super::B {
-            string: string.map(|string|string.to_owned()),
+            string: string.map(|string| string.to_owned()),
             integer,
         }
     }
     pub fn make_c(a: Option<A>, b: Vec<super::B>) -> super::C {
-        super::C {
-            a,
-            b,
-        }
+        super::C { a, b }
     }
     pub fn make_d(integers: &[i32]) -> D {
         D {
@@ -171,29 +162,27 @@ pub mod extern_ffi {
         }
     }
     pub fn make_e(integers: Option<Vec<i32>>, ds: Vec<D>) -> super::E {
-        super::E {
-            integers,
-            ds,
-        }
+        super::E { integers, ds }
     }
     pub fn make_f(as_: Option<Vec<A>>, strings: Option<Vec<String>>) -> super::F {
-        super::F {
-            as_,
-            strings,
-        }
+        super::F { as_, strings }
     }
 
     pub fn make_g(b: bool, option_b: Option<bool>, vec_b: Vec<bool>) -> super::G {
         println!("option_b: {:?}", option_b);
-        super::G {
-            b,
-            option_b,
-            vec_b,
-        }
+        super::G { b, option_b, vec_b }
     }
 
     pub fn describe(a: A, b: super::B, c: super::C, d: D, e: super::E, f: super::F) -> String {
-        format!("A: {:?}, B: {:?}, C: {:?}, D: {:?}, E: {:?}, F: {:?}", a, b, c, d, e, f)
+        format!(
+            "A: {:?}, B: {:?}, C: {:?}, D: {:?}, E: {:?}, F: {:?}",
+            a,
+            b,
+            c,
+            d,
+            e,
+            f
+        )
     }
 
     // Note: No support for return ! or ()
@@ -206,8 +195,7 @@ pub mod extern_ffi {
     }
 
     pub fn u8_vec_to_string(vec: Vec<u8>) -> String {
-        String::from_utf8(vec)
-            .unwrap()
+        String::from_utf8(vec).unwrap()
     }
 
     pub fn string_with_byte_zeros() -> String {

@@ -1,9 +1,9 @@
 #![allow(unused_imports)]
 
 extern crate c_marshalling;
-extern crate libc;
 #[macro_use]
 extern crate derive_lua_marshalling;
+extern crate libc;
 
 // procedural crates do not allow exporting code themselves, so re-export the crate and
 // implement the library here.
@@ -27,20 +27,18 @@ pub trait Type {
     }
     fn metatype() -> String;
     fn dependencies() -> Dependencies {
-        vec![]
-            .into_iter()
-            .collect()
+        vec![].into_iter().collect()
     }
     fn c_function_argument() -> String;
     fn c_mut_function_argument() -> String;
 }
 
-pub trait FromRawConversion : Type {
+pub trait FromRawConversion: Type {
     fn function() -> String;
     fn gc() -> bool;
 }
 
-pub trait IntoRawConversion : Type {
+pub trait IntoRawConversion: Type {
     fn function() -> String;
     fn create_pointer() -> String;
     fn create_array() -> String;
@@ -52,27 +50,28 @@ pub fn make_dependencies<T: Type + 'static>() -> Dependencies {
     let typeid = ::std::any::TypeId::of::<T>();
     let mut dependencies = T::dependencies();
     let type_dependencies = dependencies.keys().cloned().collect();
-    dependencies
-        .insert(
-            typeid,
-            TypeDescription{
-                typeid: ::std::any::TypeId::of::<T>(),
-                dependencies: type_dependencies,
-                typedeclaration: T::typedeclaration,
-                metatype: T::metatype,
-            });
+    dependencies.insert(
+        typeid,
+        TypeDescription {
+            typeid: ::std::any::TypeId::of::<T>(),
+            dependencies: type_dependencies,
+            typedeclaration: T::typedeclaration,
+            metatype: T::metatype,
+        },
+    );
     dependencies
 }
 
 pub fn dependency_sorted_type_descriptions<'a>(
-    dependencies: &'a Dependencies) -> Vec<&'a TypeDescription> {
-    let mut remaining : ::std::collections::HashSet<_> = dependencies.keys().cloned().collect();
+    dependencies: &'a Dependencies,
+) -> Vec<&'a TypeDescription> {
+    let mut remaining: ::std::collections::HashSet<_> = dependencies.keys().cloned().collect();
     let mut sorted_dependencies = Vec::new();
     while !remaining.is_empty() {
         let typ = {
             let (typ, dependencies) = remaining
                 .iter()
-                .map(|typ| (typ, dependencies.get(typ).unwrap()) )
+                .map(|typ| (typ, dependencies.get(typ).unwrap()))
                 .find(|&(_, dependencies)| {
                     dependencies.dependencies.is_disjoint(&remaining)
                 })
@@ -86,28 +85,32 @@ pub fn dependency_sorted_type_descriptions<'a>(
 }
 
 pub fn ptr_type_metatype<T: Type>() -> String {
-    format!(r#"
+    format!(
+        r#"
 local __typename_{self_typename} = ffi.metatype("{c_typename}", {{}})
 local __const_c_typename_{self_typename} = ffi.typeof("const {c_typename}[?]")
 local __c_function_argument_{self_typename} = ffi.typeof("{c_function_argument}[?]")
 local __c_mut_function_argument_{self_typename} = ffi.typeof("{c_mut_function_argument}[?]")
 "#,
-    self_typename = T::typename(),
-    c_typename = T::c_typename(),
-    c_function_argument = T::c_function_argument(),
-    c_mut_function_argument = T::c_mut_function_argument())
+        self_typename = T::typename(),
+        c_typename = T::c_typename(),
+        c_function_argument = T::c_function_argument(),
+        c_mut_function_argument = T::c_mut_function_argument()
+    )
 }
 
 pub fn primitive_type_metatype<T: Type>() -> String {
-    format!(r#"
+    format!(
+        r#"
 local __const_c_typename_{self_typename} = ffi.typeof("const {c_typename}[?]")
 local __c_function_argument_{self_typename} = ffi.typeof("{c_function_argument}[?]")
 local __c_mut_function_argument_{self_typename} = ffi.typeof("{c_mut_function_argument}[?]")
 "#,
-            self_typename = T::typename(),
-            c_typename = T::c_typename(),
-            c_function_argument = T::c_function_argument(),
-            c_mut_function_argument = T::c_mut_function_argument())
+        self_typename = T::typename(),
+        c_typename = T::c_typename(),
+        c_function_argument = T::c_function_argument(),
+        c_mut_function_argument = T::c_mut_function_argument()
+    )
 }
 
 pub fn ptr_type_create_pointer<T: IntoRawConversion>() -> String {
@@ -126,7 +129,8 @@ pub fn ptr_type_create_array<T: IntoRawConversion>() -> String {
     return __const_c_typename_{typename}(#result, result)
 end"#,
         function = T::function(),
-        typename = <T as Type>::typename())
+        typename = <T as Type>::typename()
+    )
 }
 
 pub fn immediate_type_create_array<T: IntoRawConversion>() -> String {
@@ -140,14 +144,17 @@ pub fn immediate_type_create_array<T: IntoRawConversion>() -> String {
     return __const_c_typename_{typename}(#result, result)
 end"#,
         function = T::function(),
-        typename = <T as Type>::typename())
+        typename = <T as Type>::typename()
+    )
 }
 
 fn primitive_type_create_pointer<T: IntoRawConversion>() -> String {
-    format!(r#"function(value)
+    format!(
+        r#"function(value)
     return __const_c_typename_{typename}(1, {{ value }})
 end"#,
-            typename = <T as Type>::typename())
+        typename = <T as Type>::typename()
+    )
 }
 
 fn primitive_type_create_array<T: IntoRawConversion>() -> String {
@@ -155,7 +162,8 @@ fn primitive_type_create_array<T: IntoRawConversion>() -> String {
         r#"function(value)
     return __const_c_typename_{typename}(#value, value)
 end"#,
-        typename = T::typename())
+        typename = T::typename()
+    )
 }
 
 impl<T: Type + 'static> Type for Option<T> {
@@ -168,7 +176,8 @@ impl<T: Type + 'static> Type for Option<T> {
     const {c_typename} *ptr;
 }} {self_typename};"#,
             c_typename = <T as Type>::c_typename(),
-            self_typename = Self::typename())
+            self_typename = Self::typename()
+        )
     }
     fn dependencies() -> Dependencies {
         make_dependencies::<T>()
@@ -195,7 +204,8 @@ impl<T: FromRawConversion + 'static> FromRawConversion for Option<T> {
         return nil
     end
 end"#,
-            function = T::function())
+            function = T::function()
+        )
     }
     fn gc() -> bool {
         true
@@ -204,7 +214,8 @@ end"#,
 
 impl<T: IntoRawConversion + 'static> IntoRawConversion for Option<T> {
     fn function() -> String {
-        format!(r#"
+        format!(
+            r#"
 function(value)
     local f = {create_pointer}
     if value ~= nil then
@@ -214,8 +225,9 @@ function(value)
     end
 end
 "#,
-        self_typename = < Self as Type >::typename(),
-        create_pointer = <T as IntoRawConversion>::create_pointer())
+            self_typename = <Self as Type>::typename(),
+            create_pointer = <T as IntoRawConversion>::create_pointer()
+        )
     }
     fn create_pointer() -> String {
         ptr_type_create_pointer::<Self>()
@@ -237,7 +249,8 @@ impl<T: Type + 'static> Type for Vec<T> {
     size_t capacity;
 }} {self_typename};"#,
             c_typename = <T as Type>::c_typename(),
-            self_typename = Self::typename())
+            self_typename = Self::typename()
+        )
     }
     fn dependencies() -> Dependencies {
         make_dependencies::<T>()
@@ -265,7 +278,8 @@ impl<T: FromRawConversion + 'static> FromRawConversion for Vec<T> {
     end
     return ret
 end"#,
-            function = T::function())
+            function = T::function()
+        )
     }
     fn gc() -> bool {
         true
@@ -274,7 +288,8 @@ end"#,
 
 impl<T: IntoRawConversion + 'static> IntoRawConversion for Vec<T> {
     fn function() -> String {
-        format!(r#"
+        format!(
+            r#"
 function(value)
     if type(value) == "string" then
         return __typename_{self_typename}(value, #value)
@@ -284,8 +299,9 @@ function(value)
     end
 end
 "#,
-                self_typename = < Self as Type >::typename(),
-                create_array = <T as IntoRawConversion>::create_array())
+            self_typename = <Self as Type>::typename(),
+            create_array = <T as IntoRawConversion>::create_array()
+        )
     }
     fn create_pointer() -> String {
         ptr_type_create_pointer::<Self>()
@@ -439,18 +455,8 @@ end"#,
     };
 }
 
-use ::libc::{
-    int8_t,
-    int16_t,
-    int32_t,
-    int64_t,
-    uint8_t,
-    uint16_t,
-    uint32_t,
-    uint64_t,
-    ssize_t,
-    size_t
-};
+use libc::{size_t, ssize_t, int16_t, int32_t, int64_t, int8_t, uint16_t, uint32_t, uint64_t,
+           uint8_t};
 
 #[allow(non_camel_case_types)]
 type float = f32;
@@ -512,11 +518,13 @@ impl<'a> IntoRawConversion for &'a [u8] {
         for i, value in pairs(value) do
             result[i] = value
         end
-        return __typename_{self_typename}(__c_function_argument_{typename}(#result, result), #result)
+        return __typename_{self_typename}(
+            __c_function_argument_{typename}(#result, result), #result)
     end
 end"#,
             self_typename = <Self as Type>::typename(),
-            typename = <u8 as Type>::typename())
+            typename = <u8 as Type>::typename()
+        )
     }
     fn create_pointer() -> String {
         ptr_type_create_pointer::<Self>()

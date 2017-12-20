@@ -1,10 +1,10 @@
-#![recursion_limit="128"]
+#![recursion_limit = "128"]
 
 extern crate libc;
 extern crate proc_macro;
-extern crate syn;
 #[macro_use]
 extern crate quote;
+extern crate syn;
 
 pub fn c_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
     let ident = &derive_input.ident;
@@ -13,38 +13,28 @@ pub fn c_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
 
     match derive_input.body {
         ::syn::Body::Struct(::syn::VariantData::Struct(ref fields)) => {
-            let marshal_type_field_declarations = fields
-                .iter()
-                .map(|field| {
-                    let ident = &field.ident.as_ref().unwrap();
-                    let ty = &field.ty;
-                    quote! { #ident: <#ty as ::c_marshalling::PtrAsReference>::Raw }
-                });
-            let mut_marshal_type_field_declarations = fields
-                .iter()
-                .map(|field| {
-                    let ident = &field.ident.as_ref().unwrap();
-                    let ty = &field.ty;
-                    quote! { #ident: <#ty as ::c_marshalling::FromRawConversion>::Raw }
-                });
-            let into_raw_field_initializers = fields
-                .iter()
-                .map(|field| {
-                    let ident = &field.ident.as_ref().unwrap();
-                    quote! { #ident: self.#ident.into_raw()? }
-                });
-            let from_raw_field_initializers = fields
-                .iter()
-                .map(|field| {
-                    let ident = &field.ident.as_ref().unwrap();
-                    quote! { #ident: ::c_marshalling::FromRawConversion::from_raw(raw.#ident)? }
-                });
-            let raw_as_ref_field_initializers = fields
-                .iter()
-                .map(|field| {
-                    let ident = &field.ident.as_ref().unwrap();
-                    quote! { #ident: ::c_marshalling::PtrAsReference::raw_as_ref(&raw.#ident)? }
-                });
+            let marshal_type_field_declarations = fields.iter().map(|field| {
+                let ident = &field.ident.as_ref().unwrap();
+                let ty = &field.ty;
+                quote! { #ident: <#ty as ::c_marshalling::PtrAsReference>::Raw }
+            });
+            let mut_marshal_type_field_declarations = fields.iter().map(|field| {
+                let ident = &field.ident.as_ref().unwrap();
+                let ty = &field.ty;
+                quote! { #ident: <#ty as ::c_marshalling::FromRawConversion>::Raw }
+            });
+            let into_raw_field_initializers = fields.iter().map(|field| {
+                let ident = &field.ident.as_ref().unwrap();
+                quote! { #ident: self.#ident.into_raw()? }
+            });
+            let from_raw_field_initializers = fields.iter().map(|field| {
+                let ident = &field.ident.as_ref().unwrap();
+                quote! { #ident: ::c_marshalling::FromRawConversion::from_raw(raw.#ident)? }
+            });
+            let raw_as_ref_field_initializers = fields.iter().map(|field| {
+                let ident = &field.ident.as_ref().unwrap();
+                quote! { #ident: ::c_marshalling::PtrAsReference::raw_as_ref(&raw.#ident)? }
+            });
 
             quote! {
 
@@ -81,7 +71,8 @@ pub fn c_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
                     type Raw = #mut_marshal_typename;
                     type Ptr = *mut Self::Raw;
 
-                    unsafe fn from_raw(raw: #mut_marshal_typename) -> Result<Self, ::c_marshalling::Error> {
+                    unsafe fn from_raw(raw: #mut_marshal_typename)
+                        -> Result<Self, ::c_marshalling::Error> {
                         Ok(Self {
                             #(#from_raw_field_initializers),*
                         })
@@ -96,7 +87,8 @@ pub fn c_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
                     type Raw = #marshal_typename;
                     type Ptr = *const Self::Raw;
 
-                    unsafe fn raw_as_ref(raw: &#marshal_typename) -> Result<Self, ::c_marshalling::Error> {
+                    unsafe fn raw_as_ref(raw: &#marshal_typename)
+                        -> Result<Self, ::c_marshalling::Error> {
                         Ok(Self {
                             #(#raw_as_ref_field_initializers),*
                         })
@@ -107,8 +99,10 @@ pub fn c_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
                     }
                 }
             }
-        },
-        ::syn::Body::Struct(::syn::VariantData::Tuple(_)) => panic!("Tuple-struct type not supported"),
+        }
+        ::syn::Body::Struct(::syn::VariantData::Tuple(_)) => {
+            panic!("Tuple-struct type not supported")
+        }
         ::syn::Body::Struct(::syn::VariantData::Unit) => panic!("Unit type not supported"),
         ::syn::Body::Enum(_) => panic!("Enum type not supported"),
     }
