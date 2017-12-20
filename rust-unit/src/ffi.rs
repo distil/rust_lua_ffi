@@ -214,6 +214,14 @@ pub mod extern_ffi {
         println!("string_with_byte_zeros");
         "String\0containing\0null\0bytes".to_owned()
     }
+
+    pub fn blob_string(message: &str) -> ::c_marshalling::Blob<String> {
+        message.to_owned().into()
+    }
+
+    pub fn use_blob_string(string: &::c_marshalling::Blob<String>) -> String {
+        string.as_ref().to_owned()
+    }
 }
 
 include!(concat!(env!("OUT_DIR"), "/ffi.rs"));

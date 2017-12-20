@@ -1,5 +1,6 @@
 #![allow(unused_imports)]
 
+extern crate c_marshalling;
 extern crate libc;
 #[macro_use]
 extern crate derive_lua_marshalling;
@@ -586,6 +587,63 @@ impl FromRawConversion for bool {
 impl IntoRawConversion for bool {
     fn function() -> String {
         "function(value) return value and 1 or 0 end".to_owned()
+    }
+    fn create_pointer() -> String {
+        primitive_type_create_pointer::<Self>()
+    }
+    fn create_array() -> String {
+        primitive_type_create_array::<Self>()
+    }
+}
+
+impl<T: Sized> Type for ::c_marshalling::Blob<T> {
+    fn typename() -> String {
+        stringify!(Blob).to_owned()
+    }
+    fn c_typename() -> String {
+        "void *".to_owned()
+    }
+    fn c_function_argument() -> String {
+        Self::c_typename()
+    }
+    fn c_mut_function_argument() -> String {
+        Self::c_typename()
+    }
+    fn metatype() -> String {
+        primitive_type_metatype::<Self>()
+    }
+}
+
+impl<'a, T: Sized + 'a> Type for &'a ::c_marshalling::Blob<T> {
+    fn typename() -> String {
+        stringify!(Blob).to_owned()
+    }
+    fn c_typename() -> String {
+        "void *".to_owned()
+    }
+    fn c_function_argument() -> String {
+        format!("const {}", Self::c_typename())
+    }
+    fn c_mut_function_argument() -> String {
+        Self::c_typename()
+    }
+    fn metatype() -> String {
+        primitive_type_metatype::<Self>()
+    }
+}
+
+impl<T: Sized> FromRawConversion for ::c_marshalling::Blob<T> {
+    fn function() -> String {
+        "function(value) return value end".to_owned()
+    }
+    fn gc() -> bool {
+        true
+    }
+}
+
+impl<'a, T: Sized + 'a> IntoRawConversion for &'a ::c_marshalling::Blob<T> {
+    fn function() -> String {
+        "function(value) return value end".to_owned()
     }
     fn create_pointer() -> String {
         primitive_type_create_pointer::<Self>()

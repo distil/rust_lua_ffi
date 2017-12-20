@@ -5,4 +5,5 @@ authors = ["Johan Gardell <736172+gardell@users.noreply.github.com>"]
 
 [dependencies]
 libc = "0.2.20"
+c-marshalling = { path = "../c-marshalling" }
 derive-lua-marshalling = { path = "../derive-lua-marshalling" }

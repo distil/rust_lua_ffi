@@ -382,3 +382,60 @@ impl PtrAsReference for bool {
         Ok(ptr != 0)
     }
 }
+
+pub struct Blob<T: Sized> {
+    value: T,
+}
+
+impl<T: Sized> From<T> for Blob<T> {
+    fn from(value: T) -> Self {
+        Blob {
+            value,
+        }
+    }
+}
+
+impl<T: Sized> AsRef<T> for Blob<T> {
+    fn as_ref(&self) -> &T {
+        &self.value
+    }
+}
+
+impl<T: Sized> IntoRawConversion for Blob<T> {
+    type Raw = *mut Self;
+    type Ptr = Self::Raw;
+
+    fn into_raw(self) -> Result<Self::Raw, Error> {
+        Ok(Box::into_raw(Box::new(self)))
+    }
+
+    fn into_ptr(self) -> Result<Self::Ptr, Error> {
+        self.into_raw()
+    }
+}
+
+impl<T: Sized> FromRawConversion for Blob<T> {
+    type Raw = *mut Self;
+    type Ptr = Self::Raw;
+
+    unsafe fn from_raw(raw: Self::Raw) -> Result<Self, Error> {
+        Ok(*Box::from_raw(raw))
+    }
+
+    unsafe fn from_ptr(ptr: Self::Ptr) -> Result<Self, Error> {
+        Self::from_raw(ptr)
+    }
+}
+
+impl<'a, T: Sized> PtrAsReference for &'a Blob<T> {
+    type Raw = *const Blob<T>;
+    type Ptr = Self::Raw;
+
+    unsafe fn raw_as_ref(raw: &Self::Raw) -> Result<Self, Error> {
+        Ok(&**raw)
+    }
+
+    unsafe fn ptr_as_ref(ptr: Self::Ptr) -> Result<Self, Error> {
+        Self::raw_as_ref(&ptr)
+    }
+}

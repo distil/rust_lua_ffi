@@ -255,4 +255,10 @@ function M.testBooleans()
     luaunit.assertFalse(g3.vec_b[2])
 end
 
+function M.testBlob()
+    local message = "Message"
+    local blob = unit.blob_string(message)
+    luaunit.assertEquals(unit.use_blob_string(blob), message)
+end
+
 return M

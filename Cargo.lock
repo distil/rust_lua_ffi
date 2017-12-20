@@ -115,6 +115,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "lua-marshalling"
 version = "0.1.0"
 dependencies = [
+ "c-marshalling 0.1.0",
  "derive-lua-marshalling 0.1.0",
  "libc 0.2.34 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
