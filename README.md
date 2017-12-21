@@ -35,6 +35,7 @@ print("describe", example.describe(a))
 ### Types
 * Supported Rust types include primitives, `Vec`, `Option`, `String` and custom `struct` with `derive(LuaMarshalling)` and any combination of those.
 `&str` is supported only as an argument but is faster than `String`. `&[]` is supported only for primitive types.
+`Result` is supported only as a return argument.
 * `Option`s `None` is `nil` in Lua.
 * Only `&str` and `&[]` of primitive types are passed as references to Rust, all other types are copied.
 * A Rust `struct` is converted to a Lua `table`, but can still be used as an argument.
