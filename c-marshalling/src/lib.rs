@@ -448,8 +448,16 @@ impl<T: Sized> From<T> for Blob<T> {
     }
 }
 
-impl<T: Sized> AsRef<T> for Blob<T> {
+impl<T> AsRef<T> for Blob<T> {
     fn as_ref(&self) -> &T {
+        &self.value
+    }
+}
+
+impl<T> std::ops::Deref for Blob<T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
         &self.value
     }
 }
