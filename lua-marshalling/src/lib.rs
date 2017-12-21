@@ -276,14 +276,10 @@ for Result<T, E> {
             r#"function(value)
     if value.ok ~= nil then
         local f = {T_function}
-        return {{
-            ok = f(value.ok[0]),
-        }}
+        return f(value.ok[0])
     else
         local f = {E_function}
-        return {{
-            err = f(value.err[0]),
-        }}
+        return nil, f(value.err[0])
     end
 end"#,
             T_function = T::function(),
