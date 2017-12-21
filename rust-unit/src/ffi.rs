@@ -210,6 +210,30 @@ pub mod extern_ffi {
     pub fn use_blob_string(string: &::c_marshalling::Blob<String>) -> String {
         string.as_ref().to_owned()
     }
+
+    pub fn maybe_make_a(string: Option<&str>, integer: Option<i32>) -> Result<A, String> {
+        match (string, integer) {
+            (Some(string), Some(integer)) => Ok(make_a(string, integer)),
+            (None, Some(_)) => Err("No string".to_owned()),
+            (Some(_), None) => Err("No integer".to_owned()),
+            (None, None) => Err("Neither".to_owned()),
+        }
+    }
+
+    pub fn make_b_or_a(string: Option<&str>, integer: Option<i32>) -> Result<A, super::B> {
+        match (string, integer) {
+            (Some(string), Some(integer)) => Ok(make_a(string, integer)),
+            (string, integer) => Err(make_b(string, integer)),
+        }
+    }
+
+    pub fn ok_none() -> Result<Option<String>, i32> {
+        Ok(None)
+    }
+
+    pub fn err_none() -> Result<String, Option<i32>> {
+        Err(None)
+    }
 }
 
 include!(concat!(env!("OUT_DIR"), "/ffi.rs"));

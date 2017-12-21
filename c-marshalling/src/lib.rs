@@ -256,6 +256,70 @@ impl<T: PtrAsReference> PtrAsReference for Option<T> {
 }
 
 #[repr(C)]
+pub struct CResult<T, E> {
+    pub ok: *const T,
+    pub err: *const E,
+}
+
+#[repr(C)]
+pub struct CMutResult<T, E> {
+    pub ok: *mut T,
+    pub err: *mut E,
+}
+
+impl<T: IntoRawConversion, E: IntoRawConversion> IntoRawConversion for Result<T, E> {
+    type Raw = CMutResult<T::Raw, E::Raw>;
+    type Ptr = *mut Self::Raw;
+
+    fn into_raw(self) -> Result<Self::Raw, Error> {
+        Ok(match self {
+            Ok(value) => CMutResult { ok: box_into_ptr(value)?, err: ::std::ptr::null_mut() },
+            Err(value) => CMutResult { ok: ::std::ptr::null_mut(), err: box_into_ptr(value)? },
+        })
+    }
+
+    fn into_ptr(self) -> Result<Self::Ptr, Error> {
+        box_into_ptr(self)
+    }
+}
+
+impl<T: FromRawConversion, E: FromRawConversion> FromRawConversion for Result<T, E> {
+    type Raw = CMutResult<T::Raw, E::Raw>;
+    type Ptr = *mut Self::Raw;
+
+    unsafe fn from_raw(raw: Self::Raw) -> Result<Self, Error> {
+        Ok(if !raw.ok.is_null() {
+            Ok(box_from_ptr(raw.ok)?)
+        } else {
+            Err(box_from_ptr(raw.err)?)
+        })
+    }
+
+    unsafe fn from_ptr(ptr: Self::Ptr) -> Result<Self, Error> {
+        box_from_ptr(ptr)
+    }
+}
+
+impl<T: PtrAsReference, E: PtrAsReference> PtrAsReference for Result<T, E> {
+    type Raw = CResult<T::Raw, E::Raw>;
+    type Ptr = *const Self::Raw;
+
+    unsafe fn raw_as_ref(raw: &Self::Raw) -> Result<Self, Error> {
+        if let Some(value) = raw.ok.as_ref() {
+            Ok(Ok(T::raw_as_ref(value)?))
+        } else if let Some(value) = raw.err.as_ref() {
+            Ok(Err(E::raw_as_ref(value)?))
+        } else {
+            unreachable!()
+        }
+    }
+
+    unsafe fn ptr_as_ref(ptr: Self::Ptr) -> Result<Self, Error> {
+        Self::raw_as_ref(&*ptr)
+    }
+}
+
+#[repr(C)]
 pub struct CSlice<T> {
     pub ptr: *const T,
     pub len: usize,

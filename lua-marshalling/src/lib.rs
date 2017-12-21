@@ -237,6 +237,64 @@ end
     }
 }
 
+impl<T: Type + 'static, E: Type + 'static> Type for Result<T, E> {
+    fn typename() -> String {
+        format!("Result_{T_typename}_{E_typename}",
+                T_typename = T::typename(), E_typename = E::typename())
+    }
+    fn typedeclaration() -> String {
+        format!(
+            r#"typedef struct {{
+    const {T_c_typename} *ok;
+    const {E_c_typename} *err;
+}} {self_typename};"#,
+            T_c_typename = T::c_typename(),
+            E_c_typename = E::c_typename(),
+            self_typename = Self::typename()
+        )
+    }
+    fn dependencies() -> Dependencies {
+        let mut dependencies = make_dependencies::<T>();
+        dependencies.extend(make_dependencies::<E>());
+        dependencies
+    }
+    fn c_function_argument() -> String {
+        format!("const {}*", Self::c_typename())
+    }
+    fn c_mut_function_argument() -> String {
+        format!("{}*", Self::c_typename())
+    }
+    fn metatype() -> String {
+        ptr_type_metatype::<Self>()
+    }
+}
+
+impl<T: FromRawConversion + 'static, E: FromRawConversion + 'static> FromRawConversion
+for Result<T, E> {
+    fn function() -> String {
+        format!(
+            r#"function(value)
+    if value.ok ~= nil then
+        local f = {T_function}
+        return {{
+            ok = f(value.ok[0]),
+        }}
+    else
+        local f = {E_function}
+        return {{
+            err = f(value.err[0]),
+        }}
+    end
+end"#,
+            T_function = T::function(),
+            E_function = E::function()
+        )
+    }
+    fn gc() -> bool {
+        true
+    }
+}
+
 impl<T: Type + 'static> Type for Vec<T> {
     fn typename() -> String {
         format!("Vec_{}", T::typename())

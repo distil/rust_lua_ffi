@@ -261,4 +261,46 @@ function M.testBlob()
     luaunit.assertEquals(unit.use_blob_string(blob), message)
 end
 
+function M.testResult()
+    local nil_nil_a = unit.maybe_make_a(nil, nil)
+    luaunit.assertNil(nil_nil_a.ok)
+    luaunit.assertEquals(nil_nil_a.err, "Neither")
+
+    local some_nil_a = unit.maybe_make_a("Bilbo Baggins", nil)
+    luaunit.assertNil(some_nil_a.ok)
+    luaunit.assertEquals(some_nil_a.err, "No integer")
+
+    local nil_some_a = unit.maybe_make_a(nil, 42)
+    luaunit.assertNil(nil_some_a.ok)
+    luaunit.assertEquals(nil_some_a.err, "No string")
+
+    local some_some_a = unit.maybe_make_a("Bilbo Baggins", 111)
+    luaunit.assertNil(some_some_a.err)
+    luaunit.assertEquals(some_some_a.ok.string, "Bilbo Baggins")
+    luaunit.assertEquals(some_some_a.ok.integer, 111)
+
+    local ok_a = unit.make_b_or_a("Bilbo Baggins", 111)
+    luaunit.assertNil(ok_a.err)
+    luaunit.assertEquals(ok_a.ok.string, "Bilbo Baggins")
+    luaunit.assertEquals(ok_a.ok.integer, 111)
+
+    local err_b = unit.make_b_or_a("Bilbo Baggins", nil)
+    luaunit.assertNil(err_b.ok)
+    luaunit.assertEquals(err_b.err.string, "Bilbo Baggins")
+    luaunit.assertNil(err_b.err.integer)
+
+    local err_b = unit.make_b_or_a(nil, 42)
+    luaunit.assertNil(err_b.ok)
+    luaunit.assertNil(err_b.err.string)
+    luaunit.assertEquals(err_b.err.integer, 42)
+
+    local ok_none = unit.ok_none()
+    luaunit.assertNil(ok_none.ok)
+    luaunit.assertNil(ok_none.err)
+
+    local err_none = unit.ok_none()
+    luaunit.assertNil(err_none.ok)
+    luaunit.assertNil(err_none.err)
+end
+
 return M
