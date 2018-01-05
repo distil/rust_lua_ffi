@@ -278,13 +278,11 @@ for Result<T, E> {
         local f = {T_function}
         return {{
             ok = f(value.ok[0]),
-            __c_ptr__ = value,
         }}
     else
         local f = {E_function}
         return {{
             err = f(value.err[0]),
-            __c_ptr__ = value,
         }}
     end
 end"#,
