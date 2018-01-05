@@ -59,31 +59,6 @@ See [https://www.lua.org/pil/19.1.html](https://www.lua.org/pil/19.1.html) for m
 * Identifiers can not be Lua or C reserved keywords. For example, a variable cannot be called `short`.
 * The `__` prefix is reserved for hidden identifiers and should not be used as field names or function arguments.
 
-### Memory management
-Return values from exported functions are registered with the Lua garbage collector.
-Note that aggregate types such as `struct`, `Result` etc *and their members*
-will be garbage collected even if there are references held to any of the members.
-
-#### Example
-```Rust
-
-#[derive(LuaMarshalling)]
-struct A {
-    string: String,
-}
-
-#[derive(LuaMarshalling)]
-struct B {
-    a: A,
-}
-```
-
-With a Lua instance of the above declared type `B`,
-the table key `a` will point to a table with the values of an instance of type `A`.
-However, in Rust, the instance `a` is merely a sub-section of the instance of type `B`.
-When the instance of type `B` is eventually destroyed by the Lua garbage collector,
-any remaining references to the field `a` are *invalid*!
-
 ## Setup
 ### Configuration
 ```
