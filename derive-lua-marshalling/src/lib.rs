@@ -1,3 +1,5 @@
+#![recursion_limit="128"]
+
 extern crate derive_c_marshalling_library;
 extern crate proc_macro;
 #[macro_use]
@@ -13,12 +15,12 @@ fn lua_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
                 let ident = &field.ident.as_ref().unwrap().to_string();
                 let ty = &field.ty;
                 quote! {
-                    format!("    {typename} {ident};\n",
+                    format!("    const {typename} {ident};",
                         typename=<#ty as ::lua_marshalling::Type>::c_typename(),
                         ident=#ident)
                 }
             });
-            let mut lua_table_field_initializers: Vec<_> = fields
+            let lua_table_field_initializers = fields
                 .iter()
                 .map(|field| {
                     let ident = &field.ident.as_ref().unwrap().to_string();
@@ -28,11 +30,18 @@ fn lua_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
                             ident = #ident,
                             function = <#ty as ::lua_marshalling::FromRawConversion>::function())
                     }
-                })
-                .collect();
-            lua_table_field_initializers.push(quote! {
-                "__c_ptr__ = value".to_owned()
-            });
+                });
+            let lua_c_struct_field_initializers = fields
+                .iter()
+                .map(|field| {
+                    let ident = &field.ident.as_ref().unwrap().to_string();
+                    let ty = &field.ty;
+                    quote! {
+                        format!("({function})(value.{ident})",
+                            ident = #ident,
+                            function = <#ty as ::lua_marshalling::IntoRawConversion>::function())
+                    }
+                });
             let lua_dependencies = fields.iter().map(|field| {
                 let ty = &field.ty;
                 quote! {
@@ -50,9 +59,11 @@ fn lua_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
                                         #(#lua_c_struct_fields),*
                                     ];
                                     format!(r#"
-            typedef struct {{
-            {fields}}} {self_typename};"#,
-                                        fields = fields.join(" "),
+typedef struct {{
+    {fields}
+}} {self_typename};
+"#,
+                                        fields = fields.join("\n"),
                                         self_typename = Self::typename())
                                 }
                                 fn dependencies() -> ::lua_marshalling::Dependencies {
@@ -75,10 +86,10 @@ fn lua_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
                                 fn function() -> String {
                                     format!(
                                         r#"function(value)
-                return readonlytable {{
-                    {}
-                }}
-            end"#,
+    return {{
+        {}
+    }}
+end"#,
                                         &[
                                             #(#lua_table_field_initializers),*
                                         ].join(", "))
@@ -90,13 +101,22 @@ fn lua_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
 
                             impl ::lua_marshalling::IntoRawConversion for #ident {
                                 fn function() -> String {
-                                    "function(value) return value.__c_ptr__ end".to_string()
+                                    let fields: &[String] = &[
+                                        #(#lua_c_struct_field_initializers),*
+                                    ];
+                                    format!(r#"function(value)
+    return __typename_{self_typename}(
+        {fields}
+    )
+end"#,
+                                        self_typename = <Self as ::lua_marshalling::Type>::typename(),
+                                        fields = fields.join(",\n    "))
                                 }
                                 fn create_pointer() -> String {
                                     ::lua_marshalling::ptr_type_create_pointer::<Self>()
                                 }
                                 fn create_array() -> String {
-                                    ::lua_marshalling::ptr_type_create_array::<Self>()
+                                    ::lua_marshalling::immediate_type_create_array::<Self>()
                                 }
                             }
                         }

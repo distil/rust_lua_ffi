@@ -154,25 +154,6 @@ end
 
     local rust = ffi.load("{library_name}")
 
-    local readonlytable = function (table)
-        return setmetatable({{}}, {{
-            __index = table,
-            __newindex = function(_, key, value)
-                error("Attempt to modify read-only table")
-            end,
-            __len = function(_)
-                return #table
-            end,
-            __ipairs = function(_)
-                return ipairs(table)
-            end,
-            __pairs = function(_)
-                return pairs(table)
-            end,
-            __metatable = false
-        }});
-    end
-
     local M = {{}}
 
     "#, library_name = #library_name),
