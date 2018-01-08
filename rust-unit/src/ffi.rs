@@ -203,14 +203,6 @@ pub mod extern_ffi {
         "String\0containing\0null\0bytes".to_owned()
     }
 
-    pub fn blob_string(message: &str) -> ::c_marshalling::Blob<String> {
-        message.to_owned().into()
-    }
-
-    pub fn use_blob_string(string: &::c_marshalling::Blob<String>) -> String {
-        string.as_ref().to_owned()
-    }
-
     pub fn maybe_make_a(string: Option<&str>, integer: Option<i32>) -> Result<A, String> {
         match (string, integer) {
             (Some(string), Some(integer)) => Ok(make_a(string, integer)),

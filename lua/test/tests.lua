@@ -255,12 +255,6 @@ function M.testBooleans()
     luaunit.assertFalse(g3.vec_b[2])
 end
 
-function M.testBlob()
-    local message = "Message"
-    local blob = unit.blob_string(message)
-    luaunit.assertEquals(unit.use_blob_string(blob), message)
-end
-
 function M.testResult()
     local ok, err = unit.maybe_make_a(nil, nil)
     luaunit.assertNil(ok)
