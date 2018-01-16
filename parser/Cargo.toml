@@ -1,0 +1,9 @@
+[package]
+name = "parser"
+version = "0.1.0"
+authors = ["Johan Gardell <736172+gardell@users.noreply.github.com>"]
+
+[dependencies]
+quote = "0.3"
+syn = "0.11"
+syntex_syntax = "0.59.1"

@@ -1,0 +1,17 @@
+[package]
+name = "rust-example"
+version = "0.1.0"
+authors = ["Johan Gardell <736172+gardell@users.noreply.github.com>"]
+build = "src/build.rs"
+
+[dependencies]
+libc = "0.2.20"
+c-marshalling = { path = "../c-marshalling" }
+lua-marshalling = { path = "../lua-marshalling" }
+
+[build-dependencies]
+generator = { path = "../generator" }
+
+[lib]
+name = "rust_example"
+crate-type = ["cdylib"]
