@@ -8,6 +8,7 @@ fn main() {
     let output = generator::generate(
         &env::current_dir().unwrap().as_path().join("src/ffi.rs"),
         "rust_example",
+        false,
     );
 
     use std::io::Write;

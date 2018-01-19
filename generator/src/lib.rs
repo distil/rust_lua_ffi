@@ -10,6 +10,7 @@ fn function_declarations(
     functions: &[parser::Function],
     uses: &[::quote::Tokens],
     library_name: &str,
+    ffi_load_using_cpath: bool,
 ) -> ::quote::Tokens {
     let extern_lua_ffi_c_header_functions = functions.iter().map(|function| {
         let ident = function.ident.to_string();
@@ -115,6 +116,18 @@ end
         }
     });
 
+    let ffi_load_expression = if ffi_load_using_cpath {
+        format!(
+            "ffi.load(
+                package.searchpath('lib{library_name}', package.cpath)
+                or package.searchpath('{library_name}', package.cpath)
+                or '{library_name}')",
+            library_name = library_name,
+        )
+    } else {
+        format!("ffi.load('{library_name}')", library_name = library_name)
+    };
+
     quote! {
             #[doc(hidden)]
             pub mod lua_bootstrap {
@@ -152,11 +165,11 @@ end
                             format!(r#"
     ]]
 
-    local rust = ffi.load("{library_name}")
+    local rust = {ffi_load_expression}
 
     local M = {{}}
 
-    "#, library_name = #library_name),
+    "#, ffi_load_expression = #ffi_load_expression),
                             sorted_types
                                 .iter()
                                 .map(|dependencies| (dependencies.metatype)())
@@ -182,7 +195,11 @@ end
         }
 }
 
-pub fn generate(input: &::std::path::Path, library_name: &str) -> String {
+pub fn generate(
+    input: &::std::path::Path,
+    library_name: &str,
+    ffi_load_using_cpath: bool,
+) -> String {
     let session = ::syntax::parse::ParseSess::new(::syntax::codemap::FilePathMapping::empty());
     let krate = ::syntax::parse::parse_crate_from_file(input, &session).unwrap();
     let items = parser::extern_ffi_mod(&krate).unwrap();
@@ -195,6 +212,6 @@ pub fn generate(input: &::std::path::Path, library_name: &str) -> String {
 {}
 "#,
         parser::function_declarations(&functions, &uses).as_str(),
-        function_declarations(&functions, &uses, library_name).as_str()
+        function_declarations(&functions, &uses, library_name, ffi_load_using_cpath).as_str()
     )
 }
