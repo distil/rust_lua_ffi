@@ -4,7 +4,9 @@ extern crate parser;
 #[macro_use]
 extern crate quote;
 extern crate syn;
-extern crate syntex_syntax as syntax;
+
+use std::fs::File;
+use std::io::Read;
 
 fn function_declarations(
     functions: &[parser::Function],
@@ -131,7 +133,7 @@ end
     quote! {
             #[doc(hidden)]
             pub mod lua_bootstrap {
-                #(use #uses;)*
+                #(#uses)*
 
                 #[no_mangle]
                 pub extern "C" fn __lua_bootstrap() -> *mut ::libc::c_char {
@@ -196,13 +198,18 @@ end
 }
 
 pub fn generate(
-    input: &::std::path::Path,
+    file_name: &::std::path::Path,
     library_name: &str,
     ffi_load_using_cpath: bool,
 ) -> String {
-    let session = ::syntax::parse::ParseSess::new(::syntax::codemap::FilePathMapping::empty());
-    let krate = ::syntax::parse::parse_crate_from_file(input, &session).unwrap();
-    let items = parser::extern_ffi_mod(&krate).unwrap();
+    let mut input = String::new();
+    let input = {
+        let mut file = File::open(file_name).unwrap();
+        file.read_to_string(&mut input).unwrap();
+        &input
+    };
+    let file = ::syn::parse_file(input).unwrap();
+    let items = parser::extern_ffi_mod(&file).expect("ffi module");
     let uses = parser::uses(items);
     let functions = parser::functions(items);
 
@@ -211,7 +218,7 @@ pub fn generate(
 {}
 {}
 "#,
-        parser::function_declarations(&functions, &uses).as_str(),
-        function_declarations(&functions, &uses, library_name, ffi_load_using_cpath).as_str()
+        parser::function_declarations(&functions, &uses).to_string(),
+        function_declarations(&functions, &uses, library_name, ffi_load_using_cpath).to_string()
     )
 }

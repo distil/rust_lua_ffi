@@ -17,5 +17,9 @@ fn main() {
         .write_all(output.as_bytes())
         .unwrap();
 
+    let _ = ::std::process::Command::new("rustfmt")
+        .arg(rust_output.display().to_string())
+        .spawn();
+
     assert!(rust_output.exists());
 }

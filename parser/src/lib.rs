@@ -1,75 +1,28 @@
 #[macro_use]
 extern crate quote;
 extern crate syn;
-extern crate syntex_syntax as syntax;
 
-pub fn extern_ffi_mod<'a>(
-    krate: &'a ::syntax::ast::Crate,
-) -> Option<&'a Vec<::syntax::ptr::P<::syntax::ast::Item>>> {
-    use syntax::ast::ItemKind::Mod;
 
-    krate
-        .module
-        .items
+pub fn extern_ffi_mod(file: &::syn::File) -> Option<&[::syn::Item]> {
+    file.items
         .iter()
-        .find(|item| item.ident.name.as_str() == stringify!(extern_ffi))
-        .and_then(|item| {
-            if let Mod(::syntax::ast::Mod {
-                inner: _,
-                ref items,
-            }) = item.node
-            {
-                Some(items)
-            } else {
-                None
+        .filter_map(|item| match *item {
+            syn::Item::Mod(ref m) if AsRef::<str>::as_ref(&m.ident) == stringify!(extern_ffi) => {
+                m.content.as_ref().map(|t| &t.1[..])
             }
+            _ => None,
         })
+        .next()
 }
 
-pub fn uses(items: &Vec<::syntax::ptr::P<::syntax::ast::Item>>) -> Vec<::quote::Tokens> {
+
+pub fn uses(items: &[::syn::Item]) -> Vec<::quote::Tokens> {
     items
         .iter()
-        .filter_map(|item| {
-            if let ::syntax::ast::ItemKind::Use(ref view_path) = item.node {
-                match view_path.node {
-                    ::syntax::ast::ViewPath_::ViewPathSimple(ref ident, ref path) => {
-                        let ident = ::syn::parse_ident(&*ident.name.as_str()).unwrap();
-                        let path = ::syn::parse_path(&path.to_string()).unwrap();
-                        Some(quote! {
-                            #path as #ident
-                        })
-                    }
-                    ::syntax::ast::ViewPath_::ViewPathGlob(ref path) => {
-                        let path = ::syn::parse_path(&path.to_string()).unwrap();
-                        Some(quote! {
-                            #path
-                        })
-                    }
-                    ::syntax::ast::ViewPath_::ViewPathList(ref path, ref path_list_items) => {
-                        let path = ::syn::parse_path(&path.to_string()).unwrap();
-                        let path_list_items = path_list_items.iter().map(|path_list_item| {
-                            let rename = ::syn::parse_ident(&*path_list_item
-                                .node
-                                .rename
-                                .unwrap_or(path_list_item.node.name)
-                                .name
-                                .as_str())
-                                .unwrap();
-                            let ident = ::syn::parse_ident(
-                                &*path_list_item.node.name.name.as_str(),
-                            ).unwrap();
-                            quote!{
-                                #ident as #rename
-                            }
-                        });
-                        Some(quote! {
-                            #path::{#(#path_list_items),*}
-                        })
-                    }
-                }
-            } else {
-                None
-            }
+        .filter_map(|item| if let ::syn::Item::Use(ref view_path) = *item {
+            Some(quote!(#view_path))
+        } else {
+            None
         })
         .collect()
 }
@@ -85,46 +38,35 @@ pub struct Function {
     pub ret: ::quote::Tokens,
 }
 
-pub fn functions(items: &Vec<::syntax::ptr::P<::syntax::ast::Item>>) -> Vec<Function> {
+pub fn functions(items: &[::syn::Item]) -> Vec<Function> {
     items
         .iter()
-        .filter_map(|item| {
-            if let ::syntax::ast::ItemKind::Fn(ref fn_decl, _, _, _, _, _) = item.node {
-                Some((&item.ident.name, &fn_decl.inputs, fn_decl.output.clone()))
-            } else {
-                None
-            }
+        .filter_map(|item| if let ::syn::Item::Fn(ref fn_decl) = *item {
+            Some((&fn_decl.ident, &fn_decl.decl.inputs, &fn_decl.decl.output))
+        } else {
+            None
         })
-        .map(|(ref name, ref args, ref output)| {
-            let ident = ::syn::parse_ident(&*name.as_str()).unwrap();
+        .map(|(ident, args, output)| {
             let args: Vec<_> = args.iter()
                 .map(|arg| {
-                    let name = match arg.pat.node {
-                        ::syntax::ast::PatKind::Ident(
-                            _,
-                            syntax::ast::SpannedIdent {
-                                node: syntax::ast::Ident { ref name, ctxt: _ },
-                                span: _,
-                            },
-                            None,
-                        ) => name,
+                    let (name, ty_arg) = match *arg {
+                        ::syn::FnArg::Captured(ref cap) => match cap.pat {
+                            ::syn::Pat::Ident(ref pat) => (&pat.ident, &cap.ty),
+                            _ => panic!("Unknown identifier"),
+                        },
                         _ => panic!("Unknown identifier"),
                     };
-                    let typ = match arg.ty.node {
-                        ::syntax::ast::TyKind::Rptr(
-                            _,
-                            ::syntax::ast::MutTy {
-                                ref ty,
-                                mutbl: ::syntax::ast::Mutability::Immutable,
-                            },
-                        ) => match ty.node {
-                            ::syntax::ast::TyKind::Path(_, ref path) => {
-                                let path = ::syn::parse_path(&path.to_string()).unwrap();
+                    let typ = match *ty_arg {
+                        ::syn::Type::Reference(::syn::TypeReference {
+                            elem: ref ty,
+                            mutability: None,
+                            ..
+                        }) => match **ty {
+                            ::syn::Type::Path(ref path) => {
                                 quote! { &#path }
                             }
-                            ::syntax::ast::TyKind::Slice(ref ty) => {
-                                if let ::syntax::ast::TyKind::Path(_, ref path) = ty.node {
-                                    let path = ::syn::parse_path(&path.to_string()).unwrap();
+                            ::syn::Type::Slice(ref ty) => {
+                                if let ::syn::Type::Path(ref path) = *ty.elem {
                                     quote! { &[#path] }
                                 } else {
                                     panic!(
@@ -138,8 +80,7 @@ pub fn functions(items: &Vec<::syntax::ptr::P<::syntax::ast::Item>>) -> Vec<Func
                                  reference or immediate"
                             ),
                         },
-                        ::syntax::ast::TyKind::Path(_, ref path) => {
-                            let path = ::syn::parse_path(&path.to_string()).unwrap();
+                        ::syn::Type::Path(ref path) => {
                             quote! { #path }
                         }
                         _ => panic!(
@@ -147,24 +88,22 @@ pub fn functions(items: &Vec<::syntax::ptr::P<::syntax::ast::Item>>) -> Vec<Func
                         ),
                     };
                     Argument {
-                        ident: ::syn::parse_ident(&*name.as_str()).unwrap(),
+                        ident: name.clone(),
                         typ,
                     }
                 })
                 .collect();
             Function {
-                ident,
+                ident: ident.clone(),
                 args,
-                ret: match output {
-                    &::syntax::ast::FunctionRetTy::Default(_) => quote! { () },
-                    &::syntax::ast::FunctionRetTy::Ty(ref ty) => {
-                        if let ::syntax::ast::TyKind::Path(_, ref path) = ty.node {
-                            let path = &::syn::parse_path(&path.to_string()).unwrap();
-                            quote! { #path }
-                        } else {
-                            panic!("Function return type can only be immediate")
-                        }
-                    }
+                ret: match *output {
+                    ::syn::ReturnType::Default => quote! { () },
+                    ::syn::ReturnType::Type(_, ref ty) => if let ::syn::Type::Path(ref path) = **ty
+                    {
+                        quote! { #path }
+                    } else {
+                        panic!("Function return type can only be immediate")
+                    },
                 },
             }
         })
@@ -185,7 +124,8 @@ pub fn function_declarations(functions: &[Function], uses: &[::quote::Tokens]) -
                 <#typ as ::c_marshalling::PtrAsReference>::ptr_as_ref(#ident)?
             }
         });
-        let gc_ident = ::syn::parse_path(&format!("__gc_{}", function.ident)).unwrap();
+        let gc_ident =
+            ::syn::parse_str::<::syn::Path>(&format!("__gc_{}", function.ident)).unwrap();
         let ret = &function.ret;
         let ident = &function.ident;
         quote! {
@@ -213,7 +153,7 @@ pub fn function_declarations(functions: &[Function], uses: &[::quote::Tokens]) -
     quote! {
         #[doc(hidden)]
         pub mod extern_c_ffi {
-            #(use #uses;)*
+            #(#uses)*
 
             #(#extern_c_ffi_functions) *
         }
