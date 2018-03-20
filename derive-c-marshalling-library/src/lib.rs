@@ -8,30 +8,34 @@ extern crate syn;
 
 pub fn c_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
     let ident = &derive_input.ident;
-    let marshal_typename = ::syn::parse_path(&format!("__c_{}", ident)).unwrap();
-    let mut_marshal_typename = ::syn::parse_path(&format!("__c_mut_{}", ident)).unwrap();
+    let marshal_typename: ::syn::Ident = ::syn::parse_str(&format!("__c_{}", ident)).unwrap();
+    let mut_marshal_typename: ::syn::Ident =
+        ::syn::parse_str(&format!("__c_mut_{}", ident)).unwrap();
 
-    match derive_input.body {
-        ::syn::Body::Struct(::syn::VariantData::Struct(ref fields)) => {
-            let marshal_type_field_declarations = fields.iter().map(|field| {
+    match derive_input.data {
+        ::syn::Data::Struct(::syn::DataStruct {
+            fields: syn::Fields::Named(ref fields),
+            ..
+        }) => {
+            let marshal_type_field_declarations = fields.named.iter().map(|field| {
                 let ident = &field.ident.as_ref().unwrap();
                 let ty = &field.ty;
                 quote! { #ident: <#ty as ::c_marshalling::PtrAsReference>::Raw }
             });
-            let mut_marshal_type_field_declarations = fields.iter().map(|field| {
+            let mut_marshal_type_field_declarations = fields.named.iter().map(|field| {
                 let ident = &field.ident.as_ref().unwrap();
                 let ty = &field.ty;
                 quote! { #ident: <#ty as ::c_marshalling::FromRawConversion>::Raw }
             });
-            let into_raw_field_initializers = fields.iter().map(|field| {
+            let into_raw_field_initializers = fields.named.iter().map(|field| {
                 let ident = &field.ident.as_ref().unwrap();
                 quote! { #ident: self.#ident.into_raw()? }
             });
-            let from_raw_field_initializers = fields.iter().map(|field| {
+            let from_raw_field_initializers = fields.named.iter().map(|field| {
                 let ident = &field.ident.as_ref().unwrap();
                 quote! { #ident: ::c_marshalling::FromRawConversion::from_raw(raw.#ident)? }
             });
-            let raw_as_ref_field_initializers = fields.iter().map(|field| {
+            let raw_as_ref_field_initializers = fields.named.iter().map(|field| {
                 let ident = &field.ident.as_ref().unwrap();
                 quote! { #ident: ::c_marshalling::PtrAsReference::raw_as_ref(&raw.#ident)? }
             });
@@ -100,10 +104,15 @@ pub fn c_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
                 }
             }
         }
-        ::syn::Body::Struct(::syn::VariantData::Tuple(_)) => {
-            panic!("Tuple-struct type not supported")
-        }
-        ::syn::Body::Struct(::syn::VariantData::Unit) => panic!("Unit type not supported"),
-        ::syn::Body::Enum(_) => panic!("Enum type not supported"),
+        ::syn::Data::Struct(::syn::DataStruct {
+            fields: syn::Fields::Unnamed(..),
+            ..
+        }) => panic!("Tuple-struct type not supported"),
+        ::syn::Data::Struct(::syn::DataStruct {
+            fields: ::syn::Fields::Unit,
+            ..
+        }) => panic!("Unit type not supported"),
+        ::syn::Data::Enum(_) => panic!("Enum type not supported"),
+        ::syn::Data::Union(_) => panic!("Union type not supported"),
     }
 }
