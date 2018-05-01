@@ -1,4 +1,6 @@
 # Lua to Rust FFI code generation
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdistil%2Frust_lua_ffi.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdistil%2Frust_lua_ffi?ref=badge_shield)
+
 ## Motivating example
 Rust
 ```Rust
@@ -140,3 +142,7 @@ Execute the file using the following command
 ```Bash
 LD_LIBRARY_PATH=..path-to-example_setup/target/debug/ luajit example.lua
 ```
+
+
+## License
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Fdistil%2Frust_lua_ffi.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Fdistil%2Frust_lua_ffi?ref=badge_large)
