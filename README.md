@@ -52,7 +52,7 @@ However, passing a Lua string to Rust as a `&[u8]` or `Vec<u8>` will not.
 ### Known Issues
 * `Vec<Option<T>>` have been disabled.
 Lua arrays generally do not handle `null` values well.
-See [https://www.lua.org/pil/19.1.html](https://www.lua.org/pil/19.1.html) for more information.
+See [www.lua.org/pil/19.1.html](https://www.lua.org/pil/19.1.html) for more information.
 * `struct` typenames must be unique. Separate modules are not enough.
 * Identifiers can not be Lua or C reserved keywords. For example, a variable cannot be called `short`.
 * The `__` prefix is reserved for hidden identifiers and should not be used as field names or function arguments.
@@ -85,19 +85,19 @@ fn main() {
 **Note** the `library_name` parameter to `generator::generator` must be equal to the library name of the crate.
 
 Add the following to the `Cargo.toml` under `[package]`
-```
+```Toml
 build = "src/build.rs"
 ```
 
 Under `[dependencies]` add the following
-```
+```Toml
 libc = "0.2.20"
 c-marshalling = { git = "https://github.com/distil/rust_lua_ffi" }
 lua-marshalling = { git = "https://github.com/distil/rust_lua_ffi" }
 ```
 
 Add the following section to the `Cargo.toml` as well
-```
+```Toml
 [build-dependencies]
 generator = { git = "https://github.com/distil/rust_lua_ffi" }
 
@@ -123,10 +123,14 @@ include!(concat!(env!("OUT_DIR"), "/ffi.rs"));
 
 ### Building
 After the library has been built, the Lua interface code can be generated using the following command
-```
+```Sh
 LD_LIBRARY_PATH=..path-to-example_setup/target/debug/ \
+    RUST_LUA_FFI_TYPE_PREFIX=example_setup \
     luajit ..path-to-rust_lua_ffi/lua/bootstrap.lua example_setup > api.lua
 ```
+Note the setting of `RUST_LUA_FFI_TYPE_PREFIX` to the module name. This is
+optional unless you need to use separately generated bindings for multiple Rust
+libraries in the same Lua instance.
 
 ### Usage
 To use the `api.lua` file generated in the *Building* step, create a Lua file called `example.lua` in the same directory as the Lua interface code containing

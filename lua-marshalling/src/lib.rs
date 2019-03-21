@@ -3,11 +3,70 @@
 extern crate c_marshalling;
 #[macro_use]
 extern crate derive_lua_marshalling;
+#[macro_use]
+extern crate lazy_static;
 extern crate libc;
 
 // procedural crates do not allow exporting code themselves, so re-export the crate and
 // implement the library here.
 pub use derive_lua_marshalling::*;
+
+fn is_valid_type_prefix(string: &str) -> bool {
+    string.is_empty() || {
+        let mut bytes = string.as_bytes().iter();
+        (match bytes.next().unwrap() {
+            #[cfg_attr(rustfmt, rustfmt::skip)]
+            | b'a'...b'z'
+            | b'A'...b'Z'
+            | b'_'
+            => true,
+            _ => false,
+        }) && bytes.all(|byte| match *byte {
+            #[cfg_attr(rustfmt, rustfmt::skip)]
+            | b'a'...b'z'
+            | b'A'...b'Z'
+            | b'0'...b'9'
+            | b'_'
+            => true,
+            _ => false,
+        })
+    }
+}
+
+#[test]
+fn test_is_valid_type_prefix() {
+    assert!(is_valid_type_prefix(""));
+    assert!(is_valid_type_prefix("__abc__"));
+    assert!(is_valid_type_prefix("__abc_3_"));
+    assert!(is_valid_type_prefix("F__abc_3_"));
+    assert!(is_valid_type_prefix("F"));
+    assert!(!is_valid_type_prefix("4F__abc_3_"));
+    assert!(!is_valid_type_prefix("F_-abc_3_"));
+}
+
+fn prefixed(string: &str) -> String {
+    lazy_static! {
+        static ref PACKAGE_PREFIX: String = {
+            std::env::var("RUST_LUA_FFI_TYPE_PREFIX")
+                .map(|name| {
+                    assert!(
+                        is_valid_type_prefix(&name),
+                        format!(
+                            "Invalid value ({:#?}) supplied for \
+                             RUST_LUA_FFI_TYPE_PREFIX. Value must contain only \
+                             ASCII alpha-numeric characters or underscores and \
+                             cannot start with a number",
+                            name,
+                        )
+                    );
+                    format!("{}__", name)
+                })
+                .unwrap_or_default()
+        };
+    }
+
+    format!("{}{}", *PACKAGE_PREFIX, string)
+}
 
 #[derive(Debug, Clone)]
 pub struct TypeDescription {
@@ -18,6 +77,10 @@ pub struct TypeDescription {
 }
 
 pub trait Type {
+    // Defaults to false since all derived types outside of this module _won't_
+    // be primitive.
+    const IS_PRIMITIVE: bool = false;
+
     fn typename() -> String;
     fn c_typename() -> String {
         Self::typename()
@@ -25,12 +88,32 @@ pub trait Type {
     fn typedeclaration() -> String {
         "".to_owned()
     }
-    fn metatype() -> String;
+    fn metatype() -> String {
+        if Self::IS_PRIMITIVE {
+            primitive_type_metatype::<Self>()
+        } else {
+            ptr_type_metatype::<Self>()
+        }
+    }
     fn dependencies() -> Dependencies {
         vec![].into_iter().collect()
     }
     fn c_function_argument() -> String;
     fn c_mut_function_argument() -> String;
+    fn prefixed_typename() -> String {
+        if Self::IS_PRIMITIVE {
+            Self::typename()
+        } else {
+            prefixed(&Self::typename())
+        }
+    }
+    fn prefixed_c_typename() -> String {
+        if Self::IS_PRIMITIVE {
+            Self::c_typename()
+        } else {
+            prefixed(&Self::c_typename())
+        }
+    }
 }
 
 pub trait FromRawConversion: Type {
@@ -72,9 +155,7 @@ pub fn dependency_sorted_type_descriptions<'a>(
             let (typ, dependencies) = remaining
                 .iter()
                 .map(|typ| (typ, dependencies.get(typ).unwrap()))
-                .find(|&(_, dependencies)| {
-                    dependencies.dependencies.is_disjoint(&remaining)
-                })
+                .find(|&(_, dependencies)| dependencies.dependencies.is_disjoint(&remaining))
                 .unwrap();
             sorted_dependencies.push(dependencies);
             typ.clone()
@@ -84,7 +165,7 @@ pub fn dependency_sorted_type_descriptions<'a>(
     sorted_dependencies
 }
 
-pub fn ptr_type_metatype<T: Type>() -> String {
+pub fn ptr_type_metatype<T: Type + ?Sized>() -> String {
     format!(
         r#"
 local __typename_{self_typename} = ffi.metatype("{c_typename}", {{}})
@@ -93,13 +174,13 @@ local __c_function_argument_{self_typename} = ffi.typeof("{c_function_argument}[
 local __c_mut_function_argument_{self_typename} = ffi.typeof("{c_mut_function_argument}[?]")
 "#,
         self_typename = T::typename(),
-        c_typename = T::c_typename(),
+        c_typename = T::prefixed_c_typename(),
         c_function_argument = T::c_function_argument(),
         c_mut_function_argument = T::c_mut_function_argument()
     )
 }
 
-pub fn primitive_type_metatype<T: Type>() -> String {
+pub fn primitive_type_metatype<T: Type + ?Sized>() -> String {
     format!(
         r#"
 local __const_c_typename_{self_typename} = ffi.typeof("const {c_typename}[?]")
@@ -167,6 +248,7 @@ end"#,
 }
 
 impl<T: Type + 'static> Type for Option<T> {
+    const IS_PRIMITIVE: bool = false;
     fn typename() -> String {
         format!("Option_{}", T::typename())
     }
@@ -175,21 +257,18 @@ impl<T: Type + 'static> Type for Option<T> {
             r#"typedef struct {{
     const {c_typename} *ptr;
 }} {self_typename};"#,
-            c_typename = <T as Type>::c_typename(),
-            self_typename = Self::typename()
+            c_typename = <T as Type>::prefixed_c_typename(),
+            self_typename = Self::prefixed_typename()
         )
     }
     fn dependencies() -> Dependencies {
         make_dependencies::<T>()
     }
     fn c_function_argument() -> String {
-        format!("const {}*", Self::c_typename())
+        format!("const {}*", Self::prefixed_c_typename())
     }
     fn c_mut_function_argument() -> String {
-        format!("{}*", Self::c_typename())
-    }
-    fn metatype() -> String {
-        ptr_type_metatype::<Self>()
+        format!("{}*", Self::prefixed_c_typename())
     }
 }
 
@@ -238,9 +317,14 @@ end
 }
 
 impl<T: Type + 'static, E: Type + 'static> Type for Result<T, E> {
+    const IS_PRIMITIVE: bool = false;
+
     fn typename() -> String {
-        format!("Result_{T_typename}_{E_typename}",
-                T_typename = T::typename(), E_typename = E::typename())
+        format!(
+            "Result_{T_typename}_{E_typename}",
+            T_typename = T::typename(),
+            E_typename = E::typename()
+        )
     }
     fn typedeclaration() -> String {
         format!(
@@ -248,9 +332,9 @@ impl<T: Type + 'static, E: Type + 'static> Type for Result<T, E> {
     const {T_c_typename} *ok;
     const {E_c_typename} *err;
 }} {self_typename};"#,
-            T_c_typename = T::c_typename(),
-            E_c_typename = E::c_typename(),
-            self_typename = Self::typename()
+            T_c_typename = T::prefixed_c_typename(),
+            E_c_typename = E::prefixed_c_typename(),
+            self_typename = Self::prefixed_typename()
         )
     }
     fn dependencies() -> Dependencies {
@@ -259,18 +343,16 @@ impl<T: Type + 'static, E: Type + 'static> Type for Result<T, E> {
         dependencies
     }
     fn c_function_argument() -> String {
-        format!("const {}*", Self::c_typename())
+        format!("const {}*", Self::prefixed_c_typename())
     }
     fn c_mut_function_argument() -> String {
-        format!("{}*", Self::c_typename())
-    }
-    fn metatype() -> String {
-        ptr_type_metatype::<Self>()
+        format!("{}*", Self::prefixed_c_typename())
     }
 }
 
 impl<T: FromRawConversion + 'static, E: FromRawConversion + 'static> FromRawConversion
-for Result<T, E> {
+    for Result<T, E>
+{
     fn function() -> String {
         format!(
             r#"function(value)
@@ -292,6 +374,8 @@ end"#,
 }
 
 impl<T: Type + 'static> Type for Vec<T> {
+    const IS_PRIMITIVE: bool = false;
+
     fn typename() -> String {
         format!("Vec_{}", T::typename())
     }
@@ -302,21 +386,18 @@ impl<T: Type + 'static> Type for Vec<T> {
     size_t len;
     size_t capacity;
 }} {self_typename};"#,
-            c_typename = <T as Type>::c_typename(),
-            self_typename = Self::typename()
+            c_typename = <T as Type>::prefixed_c_typename(),
+            self_typename = Self::prefixed_typename()
         )
     }
     fn dependencies() -> Dependencies {
         make_dependencies::<T>()
     }
     fn c_function_argument() -> String {
-        format!("const {}*", <Self as Type>::c_typename())
+        format!("const {}*", <Self as Type>::prefixed_c_typename())
     }
     fn c_mut_function_argument() -> String {
-        format!("{}*", <Self as Type>::c_typename())
-    }
-    fn metatype() -> String {
-        ptr_type_metatype::<Self>()
+        format!("{}*", <Self as Type>::prefixed_c_typename())
     }
 }
 
@@ -366,6 +447,8 @@ end
 }
 
 impl Type for String {
+    const IS_PRIMITIVE: bool = true;
+
     fn c_typename() -> String {
         "char *".to_owned()
     }
@@ -377,9 +460,6 @@ impl Type for String {
     }
     fn c_mut_function_argument() -> String {
         <Self as Type>::c_typename()
-    }
-    fn metatype() -> String {
-        primitive_type_metatype::<Self>()
     }
 }
 
@@ -408,6 +488,8 @@ macro_rules! primitive_lua_from_native {
     ($($typ:ty)*) => {
         $(
             impl Type for $typ {
+                const IS_PRIMITIVE: bool = true;
+
                 fn typename() -> String {
                     stringify!($typ).to_owned()
                 }
@@ -419,9 +501,6 @@ macro_rules! primitive_lua_from_native {
                 }
                 fn c_mut_function_argument() -> String {
                     <Self as Type>::c_typename()
-                }
-                fn metatype() -> String {
-                    primitive_type_metatype::<Self>()
                 }
             }
 
@@ -454,6 +533,8 @@ macro_rules! primitive_slice_lua_native {
     ($($typ:ty)*) => {
         $(
             impl<'a> Type for &'a [$typ] {
+                const IS_PRIMITIVE: bool = false;
+
                 fn typename() -> String {
                     format!("Slice_{}", stringify!($typ))
                 }
@@ -464,17 +545,14 @@ macro_rules! primitive_slice_lua_native {
     size_t len;
 }} {self_typename};"#,
                         c_name = stringify!($typ),
-                        self_typename = Self::typename())
+                        self_typename = Self::prefixed_typename())
                 }
                 fn c_function_argument() -> String {
-                    format!("const {}*", Self::c_typename())
+                    format!("const {}*", Self::prefixed_c_typename())
                 }
                 fn c_mut_function_argument() -> String {
                     // Mutable not supported
                     Self::c_function_argument()
-                }
-                fn metatype() -> String {
-                    ptr_type_metatype::<Self>()
                 }
             }
         )*
@@ -509,8 +587,9 @@ end"#,
     };
 }
 
-use libc::{size_t, ssize_t, int16_t, int32_t, int64_t, int8_t, uint16_t, uint32_t, uint64_t,
-           uint8_t};
+use libc::{
+    int16_t, int32_t, int64_t, int8_t, size_t, ssize_t, uint16_t, uint32_t, uint64_t, uint8_t,
+};
 
 #[allow(non_camel_case_types)]
 type float = f32;
@@ -589,6 +668,8 @@ end"#,
 }
 
 impl<'a> Type for &'a str {
+    const IS_PRIMITIVE: bool = true;
+
     fn typename() -> String {
         "_str_ptr__".to_owned()
     }
@@ -601,9 +682,6 @@ impl<'a> Type for &'a str {
     fn c_mut_function_argument() -> String {
         // Mutable not supported
         Self::c_function_argument()
-    }
-    fn metatype() -> String {
-        primitive_type_metatype::<Self>()
     }
 }
 
@@ -620,6 +698,8 @@ impl<'a> IntoRawConversion for &'a str {
 }
 
 impl Type for bool {
+    const IS_PRIMITIVE: bool = true;
+
     fn typename() -> String {
         stringify!(bool).to_owned()
     }
@@ -631,9 +711,6 @@ impl Type for bool {
     }
     fn c_mut_function_argument() -> String {
         Self::c_typename()
-    }
-    fn metatype() -> String {
-        primitive_type_metatype::<Self>()
     }
 }
 
