@@ -3,6 +3,7 @@ name = "rust-example"
 version = "0.1.0"
 authors = ["Johan Gardell <736172+gardell@users.noreply.github.com>"]
 build = "src/build.rs"
+edition = "2018"
 
 [dependencies]
 libc = "0.2.20"

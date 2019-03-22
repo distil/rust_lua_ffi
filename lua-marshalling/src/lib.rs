@@ -72,9 +72,7 @@ pub fn dependency_sorted_type_descriptions<'a>(
             let (typ, dependencies) = remaining
                 .iter()
                 .map(|typ| (typ, dependencies.get(typ).unwrap()))
-                .find(|&(_, dependencies)| {
-                    dependencies.dependencies.is_disjoint(&remaining)
-                })
+                .find(|&(_, dependencies)| dependencies.dependencies.is_disjoint(&remaining))
                 .unwrap();
             sorted_dependencies.push(dependencies);
             typ.clone()
@@ -239,8 +237,11 @@ end
 
 impl<T: Type + 'static, E: Type + 'static> Type for Result<T, E> {
     fn typename() -> String {
-        format!("Result_{T_typename}_{E_typename}",
-                T_typename = T::typename(), E_typename = E::typename())
+        format!(
+            "Result_{T_typename}_{E_typename}",
+            T_typename = T::typename(),
+            E_typename = E::typename()
+        )
     }
     fn typedeclaration() -> String {
         format!(
@@ -270,7 +271,8 @@ impl<T: Type + 'static, E: Type + 'static> Type for Result<T, E> {
 }
 
 impl<T: FromRawConversion + 'static, E: FromRawConversion + 'static> FromRawConversion
-for Result<T, E> {
+    for Result<T, E>
+{
     fn function() -> String {
         format!(
             r#"function(value)
@@ -509,8 +511,9 @@ end"#,
     };
 }
 
-use libc::{size_t, ssize_t, int16_t, int32_t, int64_t, int8_t, uint16_t, uint32_t, uint64_t,
-           uint8_t};
+use libc::{
+    int16_t, int32_t, int64_t, int8_t, size_t, ssize_t, uint16_t, uint32_t, uint64_t, uint8_t,
+};
 
 #[allow(non_camel_case_types)]
 type float = f32;

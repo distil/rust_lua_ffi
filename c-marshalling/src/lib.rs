@@ -89,7 +89,8 @@ impl<T: IntoRawConversion> IntoRawConversion for Vec<T> {
     type Ptr = *mut Self::Raw;
 
     fn into_raw(self) -> Result<Self::Raw, Error> {
-        let mut vec = self.into_iter()
+        let mut vec = self
+            .into_iter()
             .map(T::into_raw)
             .collect::<Result<Vec<_>, Error>>()?;
         let mut_vec = CMutVec {
@@ -117,7 +118,6 @@ impl<T: FromRawConversion> FromRawConversion for Vec<T> {
             .collect()
     }
 
-
     unsafe fn from_ptr(ptr: Self::Ptr) -> Result<Self, Error> {
         box_from_ptr(ptr)
     }
@@ -133,7 +133,6 @@ impl<T: PtrAsReference> PtrAsReference for Vec<T> {
             .map(|value| T::raw_as_ref(value))
             .collect()
     }
-
 
     unsafe fn ptr_as_ref(ptr: Self::Ptr) -> Result<Self, Error> {
         Self::raw_as_ref(&*ptr)
@@ -273,8 +272,14 @@ impl<T: IntoRawConversion, E: IntoRawConversion> IntoRawConversion for Result<T,
 
     fn into_raw(self) -> Result<Self::Raw, Error> {
         Ok(match self {
-            Ok(value) => CMutResult { ok: box_into_ptr(value)?, err: ::std::ptr::null_mut() },
-            Err(value) => CMutResult { ok: ::std::ptr::null_mut(), err: box_into_ptr(value)? },
+            Ok(value) => CMutResult {
+                ok: box_into_ptr(value)?,
+                err: ::std::ptr::null_mut(),
+            },
+            Err(value) => CMutResult {
+                ok: ::std::ptr::null_mut(),
+                err: box_into_ptr(value)?,
+            },
         })
     }
 
