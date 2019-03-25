@@ -19,7 +19,7 @@ fn lua_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
                 let ty = &field.ty;
                 quote! {
                     format!("    const {typename} {ident};",
-                        typename=<#ty as ::lua_marshalling::Type>::c_typename(),
+                        typename=<#ty as ::lua_marshalling::Type>::prefixed_c_typename(),
                         ident=#ident)
                 }
             });
@@ -48,76 +48,76 @@ fn lua_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
             });
 
             quote! {
-                                        impl ::lua_marshalling::Type for #ident {
-                                            fn typename() -> String {
-                                                stringify!(#ident).to_string()
-                                            }
-                                            fn typedeclaration() -> String {
-                                                let fields: &[String] = &[
-                                                    #(#lua_c_struct_fields),*
-                                                ];
+                impl ::lua_marshalling::Type for #ident {
+                    fn typename() -> String {
+                        stringify!(#ident).to_string()
+                    }
+                    fn typedeclaration() -> String {
+                        let fields: &[String] = &[
+                            #(#lua_c_struct_fields),*
+                        ];
                                                 format!(r#"
             typedef struct {{
                 {fields}
             }} {self_typename};
             "#,
-                                                    fields = fields.join("\n"),
-                                                    self_typename = Self::typename())
-                                            }
-                                            fn dependencies() -> ::lua_marshalling::Dependencies {
-                                                let mut dependencies = ::lua_marshalling::Dependencies::new();
-                                                #(#lua_dependencies)*
-                                                dependencies
-                                            }
-                                            fn c_function_argument() -> String {
-                                                format!("const {}*", Self::c_typename())
-                                            }
-                                            fn c_mut_function_argument() -> String {
-                                                format!("{}*", Self::typename())
-                                            }
-                                            fn metatype() -> String {
-                                                ::lua_marshalling::ptr_type_metatype::<Self>()
-                                            }
-                                        }
+                            fields = fields.join("\n"),
+                            self_typename = Self::prefixed_typename())
+                    }
+                    fn dependencies() -> ::lua_marshalling::Dependencies {
+                        let mut dependencies = ::lua_marshalling::Dependencies::new();
+                        #(#lua_dependencies)*
+                        dependencies
+                    }
+                    fn c_function_argument() -> String {
+                        format!("const {}*", Self::prefixed_c_typename())
+                    }
+                    fn c_mut_function_argument() -> String {
+                        format!("{}*", Self::prefixed_typename())
+                    }
+                    fn metatype() -> String {
+                        ::lua_marshalling::ptr_type_metatype::<Self>()
+                    }
+                }
 
-                                        impl ::lua_marshalling::FromRawConversion for #ident {
-                                            fn function() -> String {
-                                                format!(
+                impl ::lua_marshalling::FromRawConversion for #ident {
+                    fn function() -> String {
+                        format!(
                                                     r#"function(value)
                 return {{
                     {}
                 }}
             end"#,
-                                                    &[
-                                                        #(#lua_table_field_initializers),*
-                                                    ].join(", "))
-                                            }
-                                            fn gc() -> bool {
-                                                true
-                                            }
-                                        }
+                            &[
+                                #(#lua_table_field_initializers),*
+                            ].join(", "))
+                    }
+                    fn gc() -> bool {
+                        true
+                    }
+                }
 
-                                        impl ::lua_marshalling::IntoRawConversion for #ident {
-                                            fn function() -> String {
-                                                let fields: &[String] = &[
-                                                    #(#lua_c_struct_field_initializers),*
-                                                ];
+                impl ::lua_marshalling::IntoRawConversion for #ident {
+                    fn function() -> String {
+                        let fields: &[String] = &[
+                            #(#lua_c_struct_field_initializers),*
+                        ];
                                                 format!(r#"function(value)
                 return __typename_{self_typename}(
                     {fields}
                 )
             end"#,
-                                                    self_typename = <Self as ::lua_marshalling::Type>::typename(),
-                                                    fields = fields.join(",\n    "))
-                                            }
-                                            fn create_pointer() -> String {
-                                                ::lua_marshalling::ptr_type_create_pointer::<Self>()
-                                            }
-                                            fn create_array() -> String {
-                                                ::lua_marshalling::immediate_type_create_array::<Self>()
-                                            }
-                                        }
-                                    }
+                            self_typename = <Self as ::lua_marshalling::Type>::typename(),
+                            fields = fields.join(",\n    "))
+                    }
+                    fn create_pointer() -> String {
+                        ::lua_marshalling::ptr_type_create_pointer::<Self>()
+                    }
+                    fn create_array() -> String {
+                        ::lua_marshalling::immediate_type_create_array::<Self>()
+                    }
+                }
+            }
         }
         _ => panic!("Only non-tuple struct supported"),
     }
