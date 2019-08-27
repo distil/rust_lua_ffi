@@ -12,9 +12,10 @@ pub fn extern_ffi_mod(file: &syn::File) -> Option<&[syn::Item]> {
         .next()
 }
 
-pub fn uses<'a>(items: &'a [::syn::Item]) -> impl Iterator<Item = impl quote::ToTokens> + 'a {
+pub fn uses<'a>(
+    items: impl Iterator<Item = &'a syn::Item> + 'a
+) -> impl Iterator<Item = impl quote::ToTokens> + 'a {
     items
-        .iter()
         .filter_map(|item| if let ::syn::Item::Use(ref view_path) = *item {
             Some(quote!(#view_path))
         } else {

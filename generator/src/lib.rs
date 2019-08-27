@@ -208,7 +208,7 @@ pub fn generate(
     };
     let file = ::syn::parse_file(input).unwrap();
     let items = parser::extern_ffi_mod(&file).expect("ffi module");
-    let uses = parser::uses(items).collect::<Vec<_>>();
+    let uses = parser::uses(items.iter()).collect::<Vec<_>>();
     let functions = parser::functions(items.iter().cloned())
         .collect::<Vec<_>>();
     let declarations = parser::function_declarations(
