@@ -5,9 +5,9 @@ authors = ["Johan Gardell <736172+gardell@users.noreply.github.com>"]
 edition = "2018"
 
 [dependencies]
-libc = "0.2.20"
-syn = "0.12"
-quote = "0.4"
+libc = "0.2.62"
+syn = "1.0.5"
+quote = "1.0.2"
 derive-c-marshalling-library = { path = "../derive-c-marshalling-library" }
 
 [lib]

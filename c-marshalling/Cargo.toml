@@ -6,4 +6,4 @@ edition = "2018"
 
 [dependencies]
 libc = "0.2.20"
-quick-error = "1.2.1"
+quick-error = "1.2.2"

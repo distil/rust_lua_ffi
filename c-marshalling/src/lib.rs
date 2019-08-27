@@ -1,9 +1,6 @@
 #![allow(unused_imports)]
 
-extern crate libc;
-#[macro_use]
-extern crate quick_error;
-
+use quick_error::quick_error;
 quick_error! {
     #[derive(Debug)]
     pub enum Error {

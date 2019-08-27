@@ -5,7 +5,7 @@ authors = ["Johan Gardell <736172+gardell@users.noreply.github.com>"]
 edition = "2018"
 
 [dependencies]
-libc = "0.2.20"
+libc = "0.2.62"
 c-marshalling = { path = "../c-marshalling" }
 derive-lua-marshalling = { path = "../derive-lua-marshalling" }
 lazy_static = "1"

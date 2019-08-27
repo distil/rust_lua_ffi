@@ -1,3 +1,5 @@
+use lua_marshalling::LuaMarshalling;
+
 #[derive(Debug, Eq, PartialEq, LuaMarshalling)]
 pub struct A {
     string: String,

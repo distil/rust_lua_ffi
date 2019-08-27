@@ -1,13 +1,10 @@
-#[macro_use]
-extern crate quote;
-extern crate syn;
+use quote::quote;
 
-
-pub fn extern_ffi_mod(file: &::syn::File) -> Option<&[::syn::Item]> {
+pub fn extern_ffi_mod(file: &syn::File) -> Option<&[syn::Item]> {
     file.items
         .iter()
-        .filter_map(|item| match *item {
-            syn::Item::Mod(ref m) if AsRef::<str>::as_ref(&m.ident) == stringify!(extern_ffi) => {
+        .filter_map(|item| match item {
+            syn::Item::Mod(ref m) if m.ident.to_string() == stringify!(extern_ffi) => {
                 m.content.as_ref().map(|t| &t.1[..])
             }
             _ => None,
@@ -15,8 +12,7 @@ pub fn extern_ffi_mod(file: &::syn::File) -> Option<&[::syn::Item]> {
         .next()
 }
 
-
-pub fn uses(items: &[::syn::Item]) -> Vec<::quote::Tokens> {
+pub fn uses<'a>(items: &'a [::syn::Item]) -> impl Iterator<Item = impl quote::ToTokens> + 'a {
     items
         .iter()
         .filter_map(|item| if let ::syn::Item::Use(ref view_path) = *item {
@@ -24,40 +20,37 @@ pub fn uses(items: &[::syn::Item]) -> Vec<::quote::Tokens> {
         } else {
             None
         })
-        .collect()
 }
 
-pub struct Argument {
+pub struct Argument<T: quote::ToTokens> {
+    pub ident: std::boxed::Box<syn::Pat>,
+    pub typ: T,
+}
+
+pub struct Function<T: quote::ToTokens, R: quote::ToTokens> {
     pub ident: syn::Ident,
-    pub typ: ::quote::Tokens,
+    pub args: Vec<Argument<T>>,
+    pub ret: R,
 }
 
-pub struct Function {
-    pub ident: syn::Ident,
-    pub args: Vec<Argument>,
-    pub ret: ::quote::Tokens,
-}
-
-pub fn functions(items: &[::syn::Item]) -> Vec<Function> {
+pub fn functions(
+    items: impl Iterator<Item = syn::Item>
+) -> impl Iterator<Item = Function<impl quote::ToTokens, impl quote::ToTokens>> {
     items
-        .iter()
-        .filter_map(|item| if let ::syn::Item::Fn(ref fn_decl) = *item {
-            Some((&fn_decl.ident, &fn_decl.decl.inputs, &fn_decl.decl.output))
+        .filter_map(|item| if let ::syn::Item::Fn(fn_decl) = item {
+            Some((fn_decl.sig.ident, fn_decl.sig.inputs, fn_decl.sig.output))
         } else {
             None
         })
         .map(|(ident, args, output)| {
             let args: Vec<_> = args.iter()
                 .map(|arg| {
-                    let (name, ty_arg) = match *arg {
-                        ::syn::FnArg::Captured(ref cap) => match cap.pat {
-                            ::syn::Pat::Ident(ref pat) => (&pat.ident, &cap.ty),
-                            _ => panic!("Unknown identifier"),
-                        },
+                    let (name, ty_arg) = match arg {
+                        syn::FnArg::Typed(pat) => (&pat.pat, &pat.ty),
                         _ => panic!("Unknown identifier"),
                     };
-                    let typ = match *ty_arg {
-                        ::syn::Type::Reference(::syn::TypeReference {
+                    let typ = match **ty_arg {
+                        syn::Type::Reference(::syn::TypeReference {
                             elem: ref ty,
                             mutability: None,
                             ..
@@ -96,7 +89,7 @@ pub fn functions(items: &[::syn::Item]) -> Vec<Function> {
             Function {
                 ident: ident.clone(),
                 args,
-                ret: match *output {
+                ret: match output {
                     ::syn::ReturnType::Default => quote! { () },
                     ::syn::ReturnType::Type(_, ref ty) => if let ::syn::Type::Path(ref path) = **ty
                     {
@@ -107,11 +100,13 @@ pub fn functions(items: &[::syn::Item]) -> Vec<Function> {
                 },
             }
         })
-        .collect()
 }
 
-pub fn function_declarations(functions: &[Function], uses: &[::quote::Tokens]) -> ::quote::Tokens {
-    let extern_c_ffi_functions = functions.iter().map(|function| {
+pub fn function_declarations<'a>(
+    functions: impl Iterator<Item = &'a Function<impl quote::ToTokens + 'a, impl quote::ToTokens + 'a>>,
+    uses: impl Iterator<Item = &'a (impl quote::ToTokens + 'a)>
+) -> impl quote::ToTokens + std::fmt::Display {
+    let extern_c_ffi_functions = functions.map(|function| {
         let argument_declaration = function.args.iter().map(|arg| {
             let ident = &arg.ident;
             let typ = &arg.typ;

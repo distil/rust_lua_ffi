@@ -1,11 +1,9 @@
 #![allow(unused_imports)]
 
-extern crate c_marshalling;
 #[macro_use]
 extern crate derive_lua_marshalling;
 #[macro_use]
 extern crate lazy_static;
-extern crate libc;
 
 // procedural crates do not allow exporting code themselves, so re-export the crate and
 // implement the library here.

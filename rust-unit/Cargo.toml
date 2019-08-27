@@ -6,7 +6,7 @@ edition = "2018"
 build = "src/build.rs"
 
 [dependencies]
-libc = "0.2.20"
+libc = "0.2.62"
 c-marshalling = { path = "../c-marshalling" }
 lua-marshalling = { path = "../lua-marshalling" }
 

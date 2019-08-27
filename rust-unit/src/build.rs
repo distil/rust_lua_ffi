@@ -1,12 +1,8 @@
-extern crate generator;
-
-use std::env;
-
 fn main() {
-    let rust_output = ::std::path::Path::new(&env::var("OUT_DIR").unwrap()).join("ffi.rs");
+    let rust_output = std::path::Path::new(&std::env::var("OUT_DIR").unwrap()).join("ffi.rs");
 
     let output = generator::generate(
-        &env::current_dir().unwrap().as_path().join("src/ffi.rs"),
+        &std::env::current_dir().unwrap().as_path().join("src/ffi.rs"),
         "rust_unit",
         false,
     );

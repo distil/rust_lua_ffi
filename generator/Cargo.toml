@@ -5,6 +5,7 @@ authors = ["Johan Gardell <736172+gardell@users.noreply.github.com>"]
 edition = "2018"
 
 [dependencies]
-quote = "0.4"
-syn = "0.12"
+libc = "0.2.62"
+syn = "1.0.5"
+quote = "1.0.2"
 parser = { path = "../parser" }

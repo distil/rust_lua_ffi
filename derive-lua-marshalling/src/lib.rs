@@ -1,12 +1,10 @@
 #![recursion_limit = "128"]
 
-extern crate derive_c_marshalling_library;
 extern crate proc_macro;
-#[macro_use]
-extern crate quote;
-extern crate syn;
 
-fn lua_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
+use quote::quote;
+
+fn lua_marshalling(derive_input: &::syn::DeriveInput) -> impl quote::ToTokens {
     let ident = &derive_input.ident;
 
     match derive_input.data {
