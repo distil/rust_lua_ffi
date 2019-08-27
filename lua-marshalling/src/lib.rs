@@ -68,8 +68,8 @@ fn prefixed(string: &str) -> String {
 
 #[derive(Debug, Clone)]
 pub struct TypeDescription {
-    pub typeid: ::std::any::TypeId,
-    pub dependencies: ::std::collections::HashSet<::std::any::TypeId>,
+    pub typeid: std::any::TypeId,
+    pub dependencies: std::collections::HashSet<std::any::TypeId>,
     pub typedeclaration: fn() -> String,
     pub metatype: fn() -> String,
 }
@@ -125,16 +125,16 @@ pub trait IntoRawConversion: Type {
     fn create_array() -> String;
 }
 
-pub type Dependencies = ::std::collections::HashMap<::std::any::TypeId, TypeDescription>;
+pub type Dependencies = std::collections::HashMap<std::any::TypeId, TypeDescription>;
 
 pub fn make_dependencies<T: Type + 'static>() -> Dependencies {
-    let typeid = ::std::any::TypeId::of::<T>();
+    let typeid = std::any::TypeId::of::<T>();
     let mut dependencies = T::dependencies();
     let type_dependencies = dependencies.keys().cloned().collect();
     dependencies.insert(
         typeid,
         TypeDescription {
-            typeid: ::std::any::TypeId::of::<T>(),
+            typeid: std::any::TypeId::of::<T>(),
             dependencies: type_dependencies,
             typedeclaration: T::typedeclaration,
             metatype: T::metatype,
@@ -143,10 +143,8 @@ pub fn make_dependencies<T: Type + 'static>() -> Dependencies {
     dependencies
 }
 
-pub fn dependency_sorted_type_descriptions<'a>(
-    dependencies: &'a Dependencies,
-) -> Vec<&'a TypeDescription> {
-    let mut remaining: ::std::collections::HashSet<_> = dependencies.keys().cloned().collect();
+pub fn dependency_sorted_type_descriptions(dependencies: &Dependencies) -> Vec<&TypeDescription> {
+    let mut remaining: std::collections::HashSet<_> = dependencies.keys().cloned().collect();
     let mut sorted_dependencies = Vec::new();
     while !remaining.is_empty() {
         let typ = {

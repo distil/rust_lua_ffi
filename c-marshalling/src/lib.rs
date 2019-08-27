@@ -4,15 +4,15 @@ use quick_error::quick_error;
 quick_error! {
     #[derive(Debug)]
     pub enum Error {
-        NulError(err: ::std::ffi::NulError) {
+        NulError(err: std::ffi::NulError) {
             display("{}", err)
             from()
         }
-        IntoStringError(err: ::std::ffi::IntoStringError) {
+        IntoStringError(err: std::ffi::IntoStringError) {
             display("{}", err)
             from()
         }
-        Utf8Error(err: ::std::str::Utf8Error) {
+        Utf8Error(err: std::str::Utf8Error) {
             display("{}", err)
             from()
         }
@@ -94,7 +94,7 @@ impl<T: IntoRawConversion> IntoRawConversion for Vec<T> {
             len: vec.len(),
             capacity: vec.capacity(),
         };
-        ::std::mem::forget(vec);
+        std::mem::forget(vec);
         Ok(mut_vec)
     }
 
@@ -125,7 +125,7 @@ impl<T: PtrAsReference> PtrAsReference for Vec<T> {
     type Ptr = *const Self::Raw;
 
     unsafe fn raw_as_ref(raw: &Self::Raw) -> Result<Self, Error> {
-        ::std::slice::from_raw_parts(raw.ptr, raw.len as usize)
+        std::slice::from_raw_parts(raw.ptr, raw.len as usize)
             .into_iter()
             .map(|value| T::raw_as_ref(value))
             .collect()
@@ -138,11 +138,11 @@ impl<T: PtrAsReference> PtrAsReference for Vec<T> {
 }
 
 impl IntoRawConversion for String {
-    type Raw = *mut ::libc::c_char;
+    type Raw = *mut libc::c_char;
     type Ptr = Self::Raw;
 
     fn into_raw(self) -> Result<Self::Raw, Error> {
-        Ok(::std::ffi::CString::new(self)?.into_raw())
+        Ok(std::ffi::CString::new(self)?.into_raw())
     }
 
     fn into_ptr(self) -> Result<Self::Ptr, Error> {
@@ -151,11 +151,11 @@ impl IntoRawConversion for String {
 }
 
 impl FromRawConversion for String {
-    type Raw = *mut ::libc::c_char;
+    type Raw = *mut libc::c_char;
     type Ptr = Self::Raw;
 
     unsafe fn from_raw(raw: Self::Raw) -> Result<Self, Error> {
-        Ok(::std::ffi::CString::from_raw(raw).into_string()?)
+        Ok(std::ffi::CString::from_raw(raw).into_string()?)
     }
 
     unsafe fn from_ptr(ptr: Self::Ptr) -> Result<Self, Error> {
@@ -164,11 +164,11 @@ impl FromRawConversion for String {
 }
 
 impl PtrAsReference for String {
-    type Raw = *mut ::libc::c_char;
+    type Raw = *mut libc::c_char;
     type Ptr = Self::Raw;
 
     unsafe fn raw_as_ref(raw: &Self::Raw) -> Result<Self, Error> {
-        Ok(::std::ffi::CStr::from_ptr(*raw).to_str()?.to_owned())
+        Ok(std::ffi::CStr::from_ptr(*raw).to_str()?.to_owned())
     }
 
     unsafe fn ptr_as_ref(ptr: Self::Ptr) -> Result<Self, Error> {
@@ -177,11 +177,11 @@ impl PtrAsReference for String {
 }
 
 impl<'a> PtrAsReference for &'a str {
-    type Raw = *mut ::libc::c_char;
+    type Raw = *mut libc::c_char;
     type Ptr = Self::Raw;
 
     unsafe fn raw_as_ref(raw: &Self::Raw) -> Result<Self, Error> {
-        Ok(::std::ffi::CStr::from_ptr(*raw).to_str()?)
+        Ok(std::ffi::CStr::from_ptr(*raw).to_str()?)
     }
 
     unsafe fn ptr_as_ref(ptr: Self::Ptr) -> Result<Self, Error> {
@@ -208,7 +208,7 @@ impl<T: IntoRawConversion> IntoRawConversion for Option<T> {
             ptr: if let Some(value) = self {
                 box_into_ptr(value)?
             } else {
-                ::std::ptr::null_mut()
+                std::ptr::null_mut()
             },
         })
     }
@@ -270,8 +270,8 @@ impl<T: IntoRawConversion, E: IntoRawConversion> IntoRawConversion for Result<T,
 
     fn into_raw(self) -> Result<Self::Raw, Error> {
         Ok(match self {
-            Ok(value) => CMutResult { ok: box_into_ptr(value)?, err: ::std::ptr::null_mut() },
-            Err(value) => CMutResult { ok: ::std::ptr::null_mut(), err: box_into_ptr(value)? },
+            Ok(value) => CMutResult { ok: box_into_ptr(value)?, err: std::ptr::null_mut() },
+            Err(value) => CMutResult { ok: std::ptr::null_mut(), err: box_into_ptr(value)? },
         })
     }
 
@@ -369,7 +369,7 @@ macro_rules! primitive_marshalled_type {
                 type Ptr = *const Self::Raw;
 
                 unsafe fn raw_as_ref(raw: &Self::Raw) -> Result<Self, Error> {
-                    Ok(::std::slice::from_raw_parts(raw.ptr, raw.len as usize))
+                    Ok(std::slice::from_raw_parts(raw.ptr, raw.len as usize))
                 }
 
                 unsafe fn ptr_as_ref(ptr: Self::Ptr) -> Result<Self, Error> {

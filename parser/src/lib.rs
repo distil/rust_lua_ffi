@@ -16,7 +16,7 @@ pub fn uses<'a>(
     items: impl Iterator<Item = &'a syn::Item> + 'a
 ) -> impl Iterator<Item = impl quote::ToTokens> + 'a {
     items
-        .filter_map(|item| if let ::syn::Item::Use(ref view_path) = *item {
+        .filter_map(|item| if let syn::Item::Use(ref view_path) = *item {
             Some(quote!(#view_path))
         } else {
             None
@@ -38,7 +38,7 @@ pub fn functions(
     items: impl Iterator<Item = syn::Item>
 ) -> impl Iterator<Item = Function<impl quote::ToTokens, impl quote::ToTokens>> {
     items
-        .filter_map(|item| if let ::syn::Item::Fn(fn_decl) = item {
+        .filter_map(|item| if let syn::Item::Fn(fn_decl) = item {
             Some((fn_decl.sig.ident, fn_decl.sig.inputs, fn_decl.sig.output))
         } else {
             None
@@ -51,16 +51,16 @@ pub fn functions(
                         _ => panic!("Unknown identifier"),
                     };
                     let typ = match **ty_arg {
-                        syn::Type::Reference(::syn::TypeReference {
+                        syn::Type::Reference(syn::TypeReference {
                             elem: ref ty,
                             mutability: None,
                             ..
                         }) => match **ty {
-                            ::syn::Type::Path(ref path) => {
+                            syn::Type::Path(ref path) => {
                                 quote! { &#path }
                             }
-                            ::syn::Type::Slice(ref ty) => {
-                                if let ::syn::Type::Path(ref path) = *ty.elem {
+                            syn::Type::Slice(ref ty) => {
+                                if let syn::Type::Path(ref path) = *ty.elem {
                                     quote! { &[#path] }
                                 } else {
                                     panic!(
@@ -74,7 +74,7 @@ pub fn functions(
                                  reference or immediate"
                             ),
                         },
-                        ::syn::Type::Path(ref path) => {
+                        syn::Type::Path(ref path) => {
                             quote! { #path }
                         }
                         _ => panic!(
@@ -91,8 +91,8 @@ pub fn functions(
                 ident: ident.clone(),
                 args,
                 ret: match output {
-                    ::syn::ReturnType::Default => quote! { () },
-                    ::syn::ReturnType::Type(_, ref ty) => if let ::syn::Type::Path(ref path) = **ty
+                    syn::ReturnType::Default => quote! { () },
+                    syn::ReturnType::Type(_, ref ty) => if let syn::Type::Path(ref path) = **ty
                     {
                         quote! { #path }
                     } else {
@@ -111,26 +111,26 @@ pub fn function_declarations<'a>(
         let argument_declaration = function.args.iter().map(|arg| {
             let ident = &arg.ident;
             let typ = &arg.typ;
-            quote! { #ident: <#typ as ::c_marshalling::PtrAsReference>::Ptr }
+            quote! { #ident: <#typ as c_marshalling::PtrAsReference>::Ptr }
         });
         let argument_passing = function.args.iter().map(|arg| {
             let ident = &arg.ident;
             let typ = &arg.typ;
             quote! {
-                <#typ as ::c_marshalling::PtrAsReference>::ptr_as_ref(#ident)?
+                <#typ as c_marshalling::PtrAsReference>::ptr_as_ref(#ident)?
             }
         });
         let gc_ident =
-            ::syn::parse_str::<::syn::Path>(&format!("__gc_{}", function.ident)).unwrap();
+            syn::parse_str::<syn::Path>(&format!("__gc_{}", function.ident)).unwrap();
         let ret = &function.ret;
         let ident = &function.ident;
         quote! {
                 #[no_mangle]
                 pub unsafe extern "C" fn #ident(
                         #(#argument_declaration,)*
-                        __output: *mut <#ret as ::c_marshalling::IntoRawConversion>::Ptr) -> u32 {
-                    ::std::panic::catch_unwind(|| -> Result<u32, ::c_marshalling::Error> {
-                        *__output = <#ret as ::c_marshalling::IntoRawConversion >::into_ptr(
+                        __output: *mut <#ret as c_marshalling::IntoRawConversion>::Ptr) -> u32 {
+                    std::panic::catch_unwind(|| -> Result<u32, c_marshalling::Error> {
+                        *__output = <#ret as c_marshalling::IntoRawConversion >::into_ptr(
                             super::extern_ffi::#ident(#(#argument_passing),*)
                         )?;
                         Ok(0)
@@ -139,8 +139,8 @@ pub fn function_declarations<'a>(
 
                 #[no_mangle]
                 pub unsafe extern "C" fn #gc_ident(
-                        output: <#ret as ::c_marshalling::IntoRawConversion>::Ptr) -> u32 {
-                    <#ret as ::c_marshalling::FromRawConversion >::from_ptr(output)
+                        output: <#ret as c_marshalling::IntoRawConversion>::Ptr) -> u32 {
+                    <#ret as c_marshalling::FromRawConversion >::from_ptr(output)
                         .is_err() as u32
                 }
         }
