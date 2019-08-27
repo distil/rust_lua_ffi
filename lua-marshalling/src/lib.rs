@@ -16,16 +16,16 @@ fn is_valid_type_prefix(string: &str) -> bool {
         let mut bytes = string.as_bytes().iter();
         (match bytes.next().unwrap() {
             #[cfg_attr(rustfmt, rustfmt::skip)]
-            | b'a'...b'z'
-            | b'A'...b'Z'
+            | b'a'..=b'z'
+            | b'A'..=b'Z'
             | b'_'
             => true,
             _ => false,
         }) && bytes.all(|byte| match *byte {
             #[cfg_attr(rustfmt, rustfmt::skip)]
-            | b'a'...b'z'
-            | b'A'...b'Z'
-            | b'0'...b'9'
+            | b'a'..=b'z'
+            | b'A'..=b'Z'
+            | b'0'..=b'9'
             | b'_'
             => true,
             _ => false,
