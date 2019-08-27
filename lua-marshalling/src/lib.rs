@@ -94,7 +94,7 @@ pub trait Type {
         }
     }
     fn dependencies() -> Dependencies {
-        vec![].into_iter().collect()
+        Dependencies::new()
     }
     fn c_function_argument() -> String;
     fn c_mut_function_argument() -> String;

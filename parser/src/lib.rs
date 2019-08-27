@@ -3,13 +3,12 @@ use quote::quote;
 pub fn extern_ffi_mod(file: &syn::File) -> Option<&[syn::Item]> {
     file.items
         .iter()
-        .filter_map(|item| match item {
+        .find_map(|item| match item {
             syn::Item::Mod(ref m) if m.ident.to_string() == stringify!(extern_ffi) => {
                 m.content.as_ref().map(|t| &t.1[..])
             }
             _ => None,
         })
-        .next()
 }
 
 pub fn uses<'a>(
@@ -44,7 +43,7 @@ pub fn functions(
             None
         })
         .map(|(ident, args, output)| {
-            let args: Vec<_> = args.iter()
+            let args = args.iter()
                 .map(|arg| {
                     let (name, ty_arg) = match arg {
                         syn::FnArg::Typed(pat) => (&pat.pat, &pat.ty),

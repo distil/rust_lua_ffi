@@ -13,7 +13,8 @@ fn function_declarations(
 ) -> impl quote::ToTokens + std::fmt::Display {
     let extern_lua_ffi_c_header_functions = functions.iter().map(|function| {
         let ident = function.ident.to_string();
-        let mut argument_declaration: Vec<_> = function
+        let ret = &function.ret;
+        let argument_declaration: Vec<_> = function
             .args
             .iter()
             .map(|arg| {
@@ -22,11 +23,10 @@ fn function_declarations(
                     <#typ as lua_marshalling::Type>::c_function_argument()
                 }
             })
+            .chain(std::iter::once(quote! {
+                    format!("{}*", <#ret as lua_marshalling::Type>::c_mut_function_argument())
+                }))
             .collect();
-        let ret = &function.ret;
-        argument_declaration.push(quote! {
-            format!("{}*", <#ret as lua_marshalling::Type>::c_mut_function_argument())
-        });
         quote! {
                     format!(r#"int32_t {ident}(
         {argument_declaration});"#,
@@ -62,9 +62,9 @@ fn function_declarations(
                     }
                 })
                 .collect();
+            let argument_declaration = argument_declaration.join(",\n    ");
 
             let ret = &function.ret;
-            let argument_declaration = argument_declaration.join(",\n    ");
 
             quote!{
                 format!(r#"function M.{ident}(
@@ -173,7 +173,7 @@ end
                             sorted_types
                                 .iter()
                                 .map(|dependencies| (dependencies.metatype)())
-                                .collect::<Vec<String>>()
+                                .collect::<Vec<_>>()
                                 .join("\n"),
                             #(#extern_lua_function_wrappers,)*
                             r#"
