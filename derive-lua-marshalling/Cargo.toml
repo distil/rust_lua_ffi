@@ -2,6 +2,7 @@
 name = "derive-lua-marshalling"
 version = "0.2.0"
 authors = ["Johan Gardell <736172+gardell@users.noreply.github.com>"]
+edition = "2018"
 
 [dependencies]
 libc = "0.2.20"
