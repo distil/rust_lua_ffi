@@ -62,7 +62,7 @@ See [www.lua.org/pil/19.1.html](https://www.lua.org/pil/19.1.html) for more info
 ```
 cargo new example_setup
 ```
-* In `example_setup` create the file `src/build.rs` with the following content
+* In `example_setup` create the file `build.rs` with the following content
 
 ```Rust
 extern crate generator;
@@ -83,11 +83,6 @@ fn main() {
 ```
 
 **Note** the `library_name` parameter to `generator::generator` must be equal to the library name of the crate.
-
-Add the following to the `Cargo.toml` under `[package]`
-```Toml
-build = "src/build.rs"
-```
 
 Under `[dependencies]` add the following
 ```Toml
