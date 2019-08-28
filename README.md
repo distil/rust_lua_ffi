@@ -73,7 +73,9 @@ fn main() {
     let rust_output = ::std::path::Path::new(&env::var("OUT_DIR").unwrap()).join("ffi.rs");
 
     let output = generator::generate(
-        &env::current_dir().unwrap().as_path().join("src/lib.rs"), "example_setup");
+        &env::current_dir().unwrap().as_path().join("src/lib.rs"),
+        &env!("CARGO_PKG_NAME").replace("-","_"),
+        false);
 
     use std::io::Write;
     std::fs::File::create(rust_output.clone()).unwrap().write_all(output.as_bytes()).unwrap();
@@ -81,8 +83,6 @@ fn main() {
     assert!(rust_output.exists());
 }
 ```
-
-**Note** the `library_name` parameter to `generator::generator` must be equal to the library name of the crate.
 
 Under `[dependencies]` add the following
 ```Toml

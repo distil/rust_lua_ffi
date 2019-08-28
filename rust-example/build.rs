@@ -3,7 +3,7 @@ fn main() {
 
     let output = generator::generate(
         &std::env::current_dir().unwrap().as_path().join("src/ffi.rs"),
-        "rust_example",
+        &env!("CARGO_PKG_NAME").replace("-","_"),
         false,
     );
 
