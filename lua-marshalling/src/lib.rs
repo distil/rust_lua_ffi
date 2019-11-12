@@ -15,17 +15,17 @@ fn is_valid_type_prefix(string: &str) -> bool {
     string.is_empty() || {
         let mut bytes = string.as_bytes().iter();
         (match bytes.next().unwrap() {
-            #[cfg_attr(rustfmt, rustfmt::skip)]
-            | b'a'...b'z'
-            | b'A'...b'Z'
+            #[rustfmt::skip]
+            | b'a'..=b'z'
+            | b'A'..=b'Z'
             | b'_'
             => true,
             _ => false,
         }) && bytes.all(|byte| match *byte {
-            #[cfg_attr(rustfmt, rustfmt::skip)]
-            | b'a'...b'z'
-            | b'A'...b'Z'
-            | b'0'...b'9'
+            #[rustfmt::skip]
+            | b'a'..=b'z'
+            | b'A'..=b'Z'
+            | b'0'..=b'9'
             | b'_'
             => true,
             _ => false,
@@ -158,7 +158,7 @@ pub fn dependency_sorted_type_descriptions<'a>(
                 .find(|&(_, dependencies)| dependencies.dependencies.is_disjoint(&remaining))
                 .unwrap();
             sorted_dependencies.push(dependencies);
-            typ.clone()
+            *typ
         };
         assert!(remaining.remove(&typ));
     }
@@ -587,9 +587,26 @@ end"#,
     };
 }
 
-use libc::{
-    int16_t, int32_t, int64_t, int8_t, size_t, ssize_t, uint16_t, uint32_t, uint64_t, uint8_t,
-};
+#[allow(non_camel_case_types)]
+type int16_t = i16;
+#[allow(non_camel_case_types)]
+type int32_t = i32;
+#[allow(non_camel_case_types)]
+type int64_t = i64;
+#[allow(non_camel_case_types)]
+type int8_t = i8;
+#[allow(non_camel_case_types)]
+type uint16_t = u16;
+#[allow(non_camel_case_types)]
+type uint32_t = u32;
+#[allow(non_camel_case_types)]
+type uint64_t = u64;
+#[allow(non_camel_case_types)]
+type uint8_t = u8;
+#[allow(non_camel_case_types)]
+type size_t = usize;
+#[allow(non_camel_case_types)]
+type ssize_t = isize;
 
 #[allow(non_camel_case_types)]
 type float = f32;
