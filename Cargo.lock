@@ -2,7 +2,7 @@
 # It is not intended for manual editing.
 [[package]]
 name = "c-marshalling"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "libc 0.2.62 (registry+https://github.com/rust-lang/crates.io-index)",
  "quick-error 1.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -29,9 +29,9 @@ dependencies = [
 
 [[package]]
 name = "generator"
-version = "1.0.0"
+version = "2.0.0"
 dependencies = [
- "parser 0.1.0",
+ "parser 0.2.0",
  "quote 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 0.12.15 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -48,9 +48,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "lua-marshalling"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
- "c-marshalling 0.1.0",
+ "c-marshalling 0.2.0",
  "derive-lua-marshalling 0.2.0",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.62 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -58,7 +58,7 @@ dependencies = [
 
 [[package]]
 name = "parser"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "quote 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "syn 0.12.15 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -89,20 +89,20 @@ dependencies = [
 name = "rust-example"
 version = "0.1.0"
 dependencies = [
- "c-marshalling 0.1.0",
- "generator 1.0.0",
+ "c-marshalling 0.2.0",
+ "generator 2.0.0",
  "libc 0.2.62 (registry+https://github.com/rust-lang/crates.io-index)",
- "lua-marshalling 0.2.0",
+ "lua-marshalling 0.3.0",
 ]
 
 [[package]]
 name = "rust-unit"
 version = "0.1.0"
 dependencies = [
- "c-marshalling 0.1.0",
- "generator 1.0.0",
+ "c-marshalling 0.2.0",
+ "generator 2.0.0",
  "libc 0.2.62 (registry+https://github.com/rust-lang/crates.io-index)",
- "lua-marshalling 0.2.0",
+ "lua-marshalling 0.3.0",
 ]
 
 [[package]]

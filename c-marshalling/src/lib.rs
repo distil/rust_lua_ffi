@@ -66,6 +66,9 @@ pub fn box_into_ptr<R, T: IntoRawConversion<Raw = R>>(value: T) -> Result<*mut T
     value.into_raw().map(Box::new).map(Box::into_raw)
 }
 
+/// # Safety
+///
+/// Only called in an auto-generated context. Should not be called directly.
 pub unsafe fn box_from_ptr<R, T: FromRawConversion<Raw = R>>(raw: *mut T::Raw) -> Result<T, Error> {
     T::from_raw(*Box::from_raw(raw))
 }
@@ -129,7 +132,7 @@ impl<T: PtrAsReference> PtrAsReference for Vec<T> {
 
     unsafe fn raw_as_ref(raw: &Self::Raw) -> Result<Self, Error> {
         ::std::slice::from_raw_parts(raw.ptr, raw.len as usize)
-            .into_iter()
+            .iter()
             .map(|value| T::raw_as_ref(value))
             .collect()
     }

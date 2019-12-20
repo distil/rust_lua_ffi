@@ -187,6 +187,9 @@ end
                             .unwrap_or_else(::std::ptr::null_mut)
                 }
 
+                /// # Safety
+                ///
+                /// Only called in an auto-generated context. Should not be called directly.
                 #[no_mangle]
                 pub unsafe extern "C" fn __free_lua_bootstrap(bootstrap: *mut ::libc::c_char) {
                     if bootstrap != ::std::ptr::null_mut() {

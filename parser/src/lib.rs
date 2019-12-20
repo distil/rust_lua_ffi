@@ -88,13 +88,13 @@ pub fn functions(items: &[::syn::Item]) -> Vec<Function> {
                         ),
                     };
                     Argument {
-                        ident: name.clone(),
+                        ident: *name,
                         typ,
                     }
                 })
                 .collect();
             Function {
-                ident: ident.clone(),
+                ident: *ident,
                 args,
                 ret: match *output {
                     ::syn::ReturnType::Default => quote! { () },
@@ -129,6 +129,9 @@ pub fn function_declarations(functions: &[Function], uses: &[::quote::Tokens]) -
         let ret = &function.ret;
         let ident = &function.ident;
         quote! {
+                /// # Safety
+                ///
+                /// Only called in an auto-generated context. Should not be called directly.
                 #[no_mangle]
                 pub unsafe extern "C" fn #ident(
                         #(#argument_declaration,)*
@@ -141,6 +144,9 @@ pub fn function_declarations(functions: &[Function], uses: &[::quote::Tokens]) -
                     }).unwrap_or(Ok(2)).unwrap_or(1)
                 }
 
+                /// # Safety
+                ///
+                /// Only called in an auto-generated context. Should not be called directly.
                 #[no_mangle]
                 pub unsafe extern "C" fn #gc_ident(
                         output: <#ret as ::c_marshalling::IntoRawConversion>::Ptr) -> u32 {
