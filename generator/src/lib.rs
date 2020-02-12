@@ -139,7 +139,7 @@ end
                 pub extern "C" fn __lua_bootstrap() -> *mut ::libc::c_char {
                     let unique_types: ::lua_marshalling::Dependencies =
                         [ #(#extern_lua_unique_types)* ]
-                            .into_iter()
+                            .iter()
                             .flat_map(|value| value.into_iter()
                                 .map(|(k, v)| (k.clone(), v.clone())))
                             .collect();
