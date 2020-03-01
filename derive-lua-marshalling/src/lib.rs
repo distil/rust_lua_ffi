@@ -1,10 +1,6 @@
 #![recursion_limit = "128"]
-
-extern crate derive_c_marshalling_library;
 extern crate proc_macro;
-#[macro_use]
-extern crate quote;
-extern crate syn;
+use quote::*;
 
 fn lua_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
     let ident = &derive_input.ident;

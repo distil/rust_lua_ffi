@@ -1,7 +1,4 @@
-#[macro_use]
-extern crate quote;
-extern crate syn;
-
+use quote::*;
 
 pub fn extern_ffi_mod(file: &::syn::File) -> Option<&[::syn::Item]> {
     file.items
@@ -15,14 +12,15 @@ pub fn extern_ffi_mod(file: &::syn::File) -> Option<&[::syn::Item]> {
         .next()
 }
 
-
 pub fn uses(items: &[::syn::Item]) -> Vec<::quote::Tokens> {
     items
         .iter()
-        .filter_map(|item| if let ::syn::Item::Use(ref view_path) = *item {
-            Some(quote!(#view_path))
-        } else {
-            None
+        .filter_map(|item| {
+            if let ::syn::Item::Use(ref view_path) = *item {
+                Some(quote!(#view_path))
+            } else {
+                None
+            }
         })
         .collect()
 }
@@ -41,13 +39,16 @@ pub struct Function {
 pub fn functions(items: &[::syn::Item]) -> Vec<Function> {
     items
         .iter()
-        .filter_map(|item| if let ::syn::Item::Fn(ref fn_decl) = *item {
-            Some((&fn_decl.ident, &fn_decl.decl.inputs, &fn_decl.decl.output))
-        } else {
-            None
+        .filter_map(|item| {
+            if let ::syn::Item::Fn(ref fn_decl) = *item {
+                Some((&fn_decl.ident, &fn_decl.decl.inputs, &fn_decl.decl.output))
+            } else {
+                None
+            }
         })
         .map(|(ident, args, output)| {
-            let args: Vec<_> = args.iter()
+            let args: Vec<_> = args
+                .iter()
                 .map(|arg| {
                     let (name, ty_arg) = match *arg {
                         ::syn::FnArg::Captured(ref cap) => match cap.pat {
@@ -87,10 +88,7 @@ pub fn functions(items: &[::syn::Item]) -> Vec<Function> {
                             "Function arguments can only be immutable reference or immediate"
                         ),
                     };
-                    Argument {
-                        ident: *name,
-                        typ,
-                    }
+                    Argument { ident: *name, typ }
                 })
                 .collect();
             Function {
@@ -98,12 +96,13 @@ pub fn functions(items: &[::syn::Item]) -> Vec<Function> {
                 args,
                 ret: match *output {
                     ::syn::ReturnType::Default => quote! { () },
-                    ::syn::ReturnType::Type(_, ref ty) => if let ::syn::Type::Path(ref path) = **ty
-                    {
-                        quote! { #path }
-                    } else {
-                        panic!("Function return type can only be immediate")
-                    },
+                    ::syn::ReturnType::Type(_, ref ty) => {
+                        if let ::syn::Type::Path(ref path) = **ty {
+                            quote! { #path }
+                        } else {
+                            panic!("Function return type can only be immediate")
+                        }
+                    }
                 },
             }
         })

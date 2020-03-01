@@ -1,10 +1,5 @@
 #![recursion_limit = "128"]
-
-extern crate libc;
-extern crate proc_macro;
-#[macro_use]
-extern crate quote;
-extern crate syn;
+use quote::*;
 
 pub fn c_marshalling(derive_input: &::syn::DeriveInput) -> ::quote::Tokens {
     let ident = &derive_input.ident;
