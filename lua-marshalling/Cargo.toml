@@ -1,6 +1,7 @@
 [package]
 name = "lua-marshalling"
 version = "0.3.0"
+edition = "2018"
 authors = ["Johan Gardell <736172+gardell@users.noreply.github.com>"]
 
 [dependencies]
