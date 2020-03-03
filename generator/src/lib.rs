@@ -17,13 +17,13 @@ fn function_declarations(
             .map(|arg| {
                 let typ = &arg.typ;
                 quote! {
-                    <#typ as ::lua_marshalling::Type>::c_function_argument()
+                    <#typ as lua_marshalling::Type>::c_function_argument()
                 }
             })
             .collect();
         let ret = &function.ret;
         argument_declaration.push(quote! {
-            format!("{}*", <#ret as ::lua_marshalling::Type>::c_mut_function_argument())
+            format!("{}*", <#ret as lua_marshalling::Type>::c_mut_function_argument())
         });
         quote! {
             format!(r#"int32_t {ident}(
@@ -33,8 +33,7 @@ fn function_declarations(
             format!("int32_t __gc_{ident}(
         {argument_declaration});",
                 ident=#ident,
-                argument_declaration=<#ret as ::lua_marshalling::Type>
-                    ::c_mut_function_argument())
+                argument_declaration=<#ret as lua_marshalling::Type>::c_mut_function_argument())
         }
     });
 
@@ -55,7 +54,7 @@ fn function_declarations(
                     format!(
                         "({function})({ident})",
                         ident=#ident,
-                        function=<#typ as ::lua_marshalling::IntoRawConversion>::function())
+                        function=<#typ as lua_marshalling::IntoRawConversion>::function())
                 }
             })
             .collect();
@@ -178,8 +177,8 @@ end
     "#.to_owned()
                     ].join("\n"))
                         .ok()
-                        .map(::std::ffi::CString::into_raw)
-                        .unwrap_or_else(::std::ptr::null_mut)
+                        .map(std::ffi::CString::into_raw)
+                        .unwrap_or_else(std::ptr::null_mut)
             }
 
             /// # Safety
