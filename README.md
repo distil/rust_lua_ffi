@@ -59,24 +59,30 @@ See [www.lua.org/pil/19.1.html](https://www.lua.org/pil/19.1.html) for more info
 
 ## Setup
 ### Configuration
-```
-cargo new example_setup
+```Sh
+cargo new --lib example_setup
 ```
 * In `example_setup` create the file `src/build.rs` with the following content
 
 ```Rust
-extern crate generator;
-
 use std::env;
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
 
 fn main() {
-    let rust_output = ::std::path::Path::new(&env::var("OUT_DIR").unwrap()).join("ffi.rs");
+    let rust_output = Path::new(&env::var("OUT_DIR").unwrap()).join("ffi.rs");
 
     let output = generator::generate(
-        &env::current_dir().unwrap().as_path().join("src/lib.rs"), "example_setup");
+        &env::current_dir().unwrap().as_path().join("src/lib.rs"),
+        "fuzzy_filter_lua_ffi",
+        false,
+    );
 
-    use std::io::Write;
-    std::fs::File::create(rust_output.clone()).unwrap().write_all(output.as_bytes()).unwrap();
+    File::create(rust_output.clone())
+        .unwrap()
+        .write_all(output.as_bytes())
+        .unwrap();
 
     assert!(rust_output.exists());
 }
@@ -107,11 +113,6 @@ crate-type = ["cdylib"]
 
 In `src/lib.rs` add the following
 ```Rust
-extern crate libc;
-#[macro_use]
-extern crate lua_marshalling;
-extern crate c_marshalling;
-
 pub mod extern_ffi {
     pub fn hello_world() -> String {
         "Hello World!".to_owned()

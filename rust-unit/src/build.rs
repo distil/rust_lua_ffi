@@ -1,5 +1,3 @@
-extern crate generator;
-
 use std::env;
 
 fn main() {

@@ -1,6 +1,7 @@
 [package]
 name = "rust-unit"
 version = "0.1.0"
+edition = "2018"
 authors = ["Johan Gardell <736172+gardell@users.noreply.github.com>"]
 build = "src/build.rs"
 

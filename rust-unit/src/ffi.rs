@@ -1,3 +1,5 @@
+use lua_marshalling::LuaMarshalling;
+
 #[derive(Clone, Debug, Eq, PartialEq, LuaMarshalling)]
 pub struct A {
     string: String,
@@ -176,12 +178,7 @@ pub mod extern_ffi {
     pub fn describe(a: A, b: super::B, c: super::C, d: D, e: super::E, f: super::F) -> String {
         format!(
             "A: {:?}, B: {:?}, C: {:?}, D: {:?}, E: {:?}, F: {:?}",
-            a,
-            b,
-            c,
-            d,
-            e,
-            f
+            a, b, c, d, e, f
         )
     }
 
