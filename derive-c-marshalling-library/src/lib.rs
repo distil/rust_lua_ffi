@@ -1,7 +1,9 @@
 #![recursion_limit = "128"]
+extern crate proc_macro2;
+use proc_macro2::TokenStream;
 use quote::*;
 
-pub fn c_marshalling(derive_input: &syn::DeriveInput) -> quote::Tokens {
+pub fn c_marshalling(derive_input: &syn::DeriveInput) -> TokenStream {
     let ident = &derive_input.ident;
     let marshal_typename: syn::Ident = syn::parse_str(&format!("__c_{}", ident)).unwrap();
     let mut_marshal_typename: syn::Ident = syn::parse_str(&format!("__c_mut_{}", ident)).unwrap();

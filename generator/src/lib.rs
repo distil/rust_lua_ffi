@@ -1,14 +1,19 @@
 #![recursion_limit = "256"]
+
+extern crate proc_macro;
+extern crate proc_macro2;
+
+use proc_macro2::TokenStream;
 use quote::*;
 use std::fs::File;
 use std::io::Read;
 
 fn function_declarations(
     functions: &[parser::Function],
-    uses: &[quote::Tokens],
+    uses: &[TokenStream],
     library_name: &str,
     ffi_load_using_cpath: bool,
-) -> quote::Tokens {
+) -> TokenStream {
     let extern_lua_ffi_c_header_functions = functions.iter().map(|function| {
         let ident = function.ident.to_string();
         let mut argument_declaration: Vec<_> = function
