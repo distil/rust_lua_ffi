@@ -1,8 +1,9 @@
 #![recursion_limit = "128"]
 extern crate proc_macro;
+extern crate proc_macro2;
 use quote::*;
 
-fn lua_marshalling(derive_input: &syn::DeriveInput) -> quote::Tokens {
+fn lua_marshalling(derive_input: &syn::DeriveInput) -> proc_macro2::TokenStream {
     let ident = &derive_input.ident;
 
     match derive_input.data {

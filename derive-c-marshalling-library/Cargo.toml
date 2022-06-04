@@ -5,6 +5,7 @@ edition = "2018"
 authors = ["Johan Gardell <736172+gardell@users.noreply.github.com>"]
 
 [dependencies]
-libc = "0.2.20"
-syn = "0.12"
-quote = "0.4"
+libc = "0.2"
+syn = "1.0"
+quote = "1.0"
+proc-macro2 = "1.0"

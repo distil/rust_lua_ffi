@@ -1,18 +1,18 @@
+extern crate proc_macro;
+
+use proc_macro2::TokenStream;
 use quote::*;
 
 pub fn extern_ffi_mod(file: &syn::File) -> Option<&[syn::Item]> {
-    file.items
-        .iter()
-        .filter_map(|item| match *item {
-            syn::Item::Mod(ref m) if AsRef::<str>::as_ref(&m.ident) == stringify!(extern_ffi) => {
-                m.content.as_ref().map(|t| &t.1[..])
-            }
-            _ => None,
-        })
-        .next()
+    file.items.iter().find_map(|item| match *item {
+        syn::Item::Mod(ref m) if m.ident.to_string() == stringify!(extern_ffi) => {
+            m.content.as_ref().map(|t| &t.1[..])
+        }
+        _ => None,
+    })
 }
 
-pub fn uses(items: &[syn::Item]) -> Vec<quote::Tokens> {
+pub fn uses(items: &[syn::Item]) -> Vec<TokenStream> {
     items
         .iter()
         .filter_map(|item| {
@@ -27,13 +27,13 @@ pub fn uses(items: &[syn::Item]) -> Vec<quote::Tokens> {
 
 pub struct Argument {
     pub ident: syn::Ident,
-    pub typ: quote::Tokens,
+    pub typ: TokenStream,
 }
 
 pub struct Function {
     pub ident: syn::Ident,
     pub args: Vec<Argument>,
-    pub ret: quote::Tokens,
+    pub ret: TokenStream,
 }
 
 pub fn functions(items: &[::syn::Item]) -> Vec<Function> {
@@ -41,7 +41,7 @@ pub fn functions(items: &[::syn::Item]) -> Vec<Function> {
         .iter()
         .filter_map(|item| {
             if let syn::Item::Fn(ref fn_decl) = *item {
-                Some((&fn_decl.ident, &fn_decl.decl.inputs, &fn_decl.decl.output))
+                Some((&fn_decl.sig.ident, &fn_decl.sig.inputs, &fn_decl.sig.output))
             } else {
                 None
             }
@@ -51,13 +51,13 @@ pub fn functions(items: &[::syn::Item]) -> Vec<Function> {
                 .iter()
                 .map(|arg| {
                     let (name, ty_arg) = match *arg {
-                        syn::FnArg::Captured(ref cap) => match cap.pat {
-                            syn::Pat::Ident(ref pat) => (&pat.ident, &cap.ty),
+                        syn::FnArg::Typed(ref typed) => match *typed.pat {
+                            syn::Pat::Ident(ref pat) => (&pat.ident, &typed.ty),
                             _ => panic!("Unknown identifier"),
                         },
                         _ => panic!("Unknown identifier"),
                     };
-                    let typ = match *ty_arg {
+                    let typ = match **ty_arg {
                         syn::Type::Reference(::syn::TypeReference {
                             elem: ref ty,
                             mutability: None,
@@ -88,11 +88,14 @@ pub fn functions(items: &[::syn::Item]) -> Vec<Function> {
                             "Function arguments can only be immutable reference or immediate"
                         ),
                     };
-                    Argument { ident: *name, typ }
+                    Argument {
+                        ident: name.clone(),
+                        typ,
+                    }
                 })
                 .collect();
             Function {
-                ident: *ident,
+                ident: ident.clone(),
                 args,
                 ret: match *output {
                     syn::ReturnType::Default => quote! { () },
@@ -109,7 +112,7 @@ pub fn functions(items: &[::syn::Item]) -> Vec<Function> {
         .collect()
 }
 
-pub fn function_declarations(functions: &[Function], uses: &[quote::Tokens]) -> quote::Tokens {
+pub fn function_declarations(functions: &[Function], uses: &[TokenStream]) -> TokenStream {
     let extern_c_ffi_functions = functions.iter().map(|function| {
         let argument_declaration = function.args.iter().map(|arg| {
             let ident = &arg.ident;
